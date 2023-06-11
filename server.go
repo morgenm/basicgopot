@@ -7,11 +7,15 @@ import (
 	"io/ioutil"
 	"os"
 	"time"
+	"crypto/sha256"
 )
 
-func checkErr(err error, outString string) {
+func checkErr(err error, outString string) bool {
 	if err != nil {
 		log.Print(outString, " ", err)
+		return true
+	} else {
+		return false
 	}
 }
 
@@ -25,7 +29,7 @@ func fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 	log.Print("File being uploaded by user...")
 
-	// Create file for writing. Make writing optional in config
+	// Create file for writing. TODO: Make writing optional in config
 	uploadFilename := "uploads/" + time.Now().Format(time.UnixDate) + " " + handler.Filename;
 	outFile, err := os.Create(uploadFilename)
 	checkErr(err, "Failed to create file!")
@@ -33,7 +37,9 @@ func fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Read uploaded file to byte array
 	data, err := ioutil.ReadAll(file)
-	checkErr(err, "Failed to read uploaded file!")
+	if checkErr(err, "Failed to read uploaded file!")  {
+		return
+	}
 
 	// Write to file
 	outFile.Write(data)
@@ -42,13 +48,27 @@ func fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "File uploaded!")
 	log.Print("File uploaded by user.")
 
-	// Upload to virus total
+	// Get file hash
+	hasher := sha256.New()
+	_, err = hasher.Write(data)
+	if checkErr(err, "Error getting file hash!")  {
+		return
+	}
+	hash := fmt.Sprintf("%x", hasher.Sum(nil))
+	log.Print("File hash: ", hash)
+
+
+	// Check if on VirusTotal. TODO: Make VT optional
+
+	// Upload to virus total. TODO: Make file upload optional
 
 	// Update JSON upload log
 
 }
 
 func main() {
+	// TODO: create upload directory 
+
     server := http.FileServer(http.Dir("./static"))
 	http.Handle("/", server)
 
