@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+
+<head>
+    <title>IP Camera Firmware Update</title>
+
+    <link rel="stylesheet" href="uploadscreen.css">
+</head>
+
+<body style="background-color: dimgray;">
+
+    <div>
+        <center>
+            <h1>Upload Firmware File</h1>
+            <br><br><br><br>
+            <form 
+            enctype="multipart/form-data"
+            action="/upload"
+            method="post">
+                <label>Upload file: </label>
+                <input type="file" name="fileupload">
+                <br>
+                <br>
+                <input type="submit" value="upload">
+            </form>
+        </center>
+    </div>
+
+</body>
