@@ -72,7 +72,9 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 			if _, err = io.Copy(formFile, reader); err != nil {
 				log.Print("error")
 			}
-			writer.Close()
+			if checkErr(writer.Close(), "Error closing multipart form!") {
+				return
+			}
 
 			// Make POST request
 			client := &http.Client{}
@@ -130,8 +132,10 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 									outFile, err := os.Create(scanFilename)
 									if !checkErr(err, "Failed to create file!") { // Successfully opened file
 										outFile.Write(body)
+									} else {
+										return
 									}
-									defer outFile.Close()
+									outFile.Close()
 
 									log.Print("File analysis retrieved from VirusTotal, writing scan results.")
 								}
@@ -148,7 +152,9 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 
 func (config *Config) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Set file size limit for the upload
-	r.ParseMultipartForm(config.UploadLimitMB << 20)
+	if checkErr(r.ParseMultipartForm(config.UploadLimitMB << 20), "Error parsing upload form!") {
+		return
+	}
 
 	// Get file
 	file, handler, err := r.FormFile("fileupload")
@@ -161,10 +167,9 @@ func (config *Config) fileUploadHandler(w http.ResponseWriter, r *http.Request) 
 	log.Print("File being uploaded by user...")
 
 	// Create file for writing. TODO: Make writing optional in config
-	uploadFilename := time.Now().Format(time.UnixDate) + " " + handler.Filename;
+	uploadFilename := time.Now().Format(time.UnixDate);
 	outFile, err := os.Create("uploads/" + uploadFilename)
 	checkErr(err, "Failed to create file!")
-	defer outFile.Close()
 
 	// Read uploaded file to byte array
 	data, err := io.ReadAll(file)
@@ -173,7 +178,9 @@ func (config *Config) fileUploadHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Write to file
-	outFile.Write(data)
+	_, err = outFile.Write(data)
+	checkErr(err, "Error writing to file!")
+	outFile.Close()
 
 	// Inform user of success
 	fmt.Fprintf(w, "File uploaded!")
@@ -204,6 +211,6 @@ func runServer(config *Config) {
 	// Listen
 	portStr := fmt.Sprintf(":%d", config.ServerPort)
 	log.Print("Server listening on port ", portStr)
-	http.ListenAndServe(portStr, nil)
+	checkErr(http.ListenAndServe(portStr, nil), "Error while listening and serving!")
 }
 
