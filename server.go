@@ -42,8 +42,8 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 					}
 					
 					// Write JSON to file
-					scanFilename := "scans/" + time.Now().Format(time.UnixDate) + " " + outFileName+".json";
-					outFile, err := os.Create(scanFilename)
+					scanFilepath := filepath.Clean(filepath.Join("scans/", time.Now().Format(time.UnixDate) + " " + outFileName+".json"));
+					outFile, err := os.Create(scanFilepath)
 					if !checkErr(err, "Failed to create file!") { // Successfully opened file
 						outFile.Write(body)
 					}
@@ -130,7 +130,7 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 									
 									// Write JSON to file
 									scanFilename := time.Now().Format(time.UnixDate) + " " + outFileName+".json";
-									scanFilepath := filepath.Join("scans/", filepath.Clean(scanFilename))
+									scanFilepath := filepath.Clean(filepath.Join("scans/", scanFilename))
 									outFile, err := os.Create(scanFilepath)
 									if !checkErr(err, "Failed to create file!") { // Successfully opened file
 										outFile.Write(body)
