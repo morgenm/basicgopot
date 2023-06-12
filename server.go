@@ -170,7 +170,7 @@ func (config *Config) fileUploadHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Create file for writing. TODO: Make writing optional in config
 	uploadFilename := time.Now().Format(time.UnixDate);
-	uploadFilepath := filepath.Join("uploads/", filepath.Clean(uploadFilename))
+	uploadFilepath := filepath.Clean(filepath.Join("uploads/", uploadFilename))
 	outFile, err := os.Create(uploadFilepath)
 	checkErr(err, "Failed to create file!")
 
