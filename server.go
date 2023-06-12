@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"mime/multipart"
 	"encoding/json"
+	"path/filepath"
 )
 
 func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName string, data []byte) {
@@ -128,8 +129,9 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 									}
 									
 									// Write JSON to file
-									scanFilename := "scans/" + time.Now().Format(time.UnixDate) + " " + outFileName+".json";
-									outFile, err := os.Create(scanFilename)
+									scanFilename := time.Now().Format(time.UnixDate) + " " + outFileName+".json";
+									scanFilepath := filepath.Join("scans/", filepath.Clean(scanFilename))
+									outFile, err := os.Create(scanFilepath)
 									if !checkErr(err, "Failed to create file!") { // Successfully opened file
 										outFile.Write(body)
 									} else {
@@ -168,7 +170,8 @@ func (config *Config) fileUploadHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Create file for writing. TODO: Make writing optional in config
 	uploadFilename := time.Now().Format(time.UnixDate);
-	outFile, err := os.Create("uploads/" + uploadFilename)
+	uploadFilepath := filepath.Join("uploads/", filepath.Clean(uploadFilename))
+	outFile, err := os.Create(uploadFilepath)
 	checkErr(err, "Failed to create file!")
 
 	// Read uploaded file to byte array
