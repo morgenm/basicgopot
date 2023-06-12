@@ -105,7 +105,9 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 	
 						// Get analysis URL from response
 						var decoded map[string]interface{}
-    					json.Unmarshal([]byte(body), &decoded)
+    					if checkErr(json.Unmarshal([]byte(body), &decoded), "Error unmarshalling JSON analysis from VirusTotal!") {
+							return
+						}
 						jData := decoded["data"].(map[string]interface{})
 						jLinks := jData["links"].(map[string]interface{})
 						analysisUrl, _ := jLinks["self"].(string)
@@ -137,10 +139,10 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 									scanFilename := time.Now().Format(time.UnixDate) + " " + outFileName+".json";
 									scanFilepath := filepath.Clean(filepath.Join("scans/", scanFilename))
 									outFile, err := os.Create(scanFilepath)
-									if !checkErr(err, "Failed to create file!") { // Successfully opened file
-										outFile.Write(body)
-									} else {
+									if checkErr(err, "Failed to create file!") { // Successfully opened file
 										return
+									} else {
+										outFile.Write(body)
 									}
 									if checkErr(outFile.Close(), "Error closing the scan analysis file!") {
 										return
