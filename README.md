@@ -1,7 +1,7 @@
 # BasicGoPot
 [![Go](https://github.com/morgenm/basicgopot/actions/workflows/go.yml/badge.svg)](https://github.com/morgenm/basicgopot/actions/workflows/go.yml)
 
-**_A basic honeypot in Go._**
+**_A basic honeypot written in Go._**
 
 The honeypot is an HTTP server which will allow the user to upload any type of file. The files are written to the uploads directory and then are passed to VirusTotal to see if they are malicious. The VirusTotal results are written to the scans directory.
 
