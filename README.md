@@ -15,3 +15,12 @@ I put a workflow in place using the [Horusec](https://horusec.io/site/) SAST eng
 The screenshot below displays the default template, firmware_update_v2. It is a basic file upload form disguised as a firmware update upload.
 
 ![Template Firmware Upload v2](docs/template_firmware_upload_v2.png?raw=true "Default template")
+
+## VirusTotal
+Once the file is uploaded, it will be written to the "uploads" folder and then checked against VirusTotal, and uploaded if it is unique, as mentioned above. The log file will state that a file is uploaded, its hash will be listed, and some basic information about the VirusTotal upload will be outputted. 
+
+![Sample log output](docs/log.png?raw=true "Sample log output")
+
+A sample JSON output is listed below. I uploaded Win32.Zeus to the server. This sample is already present on VirusTotal, so the scan results were saved.
+
+![Win32.Zeus output](docs/win32_zeus.png?raw=true "Win32.Zeus output")
