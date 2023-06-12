@@ -11,10 +11,26 @@ As of right now, if the file already has been uploaded to VirusTotal, the honeyp
 
 I put a workflow in place using the [Horusec](https://horusec.io/site/) SAST engine to check for vulnerabilities in the code.
 
-## Default template
-The screenshot below displays the default template, firmware_update_v2. It is a basic file upload form disguised as a firmware update upload.
+## Templates
+### Default template
+The screenshot below displays the default template, firmware_update_v2. It is a basic file upload form disguised as a firmware update upload. This template is named `firmware_update_v2`.
 
 ![Template Firmware Upload v2](docs/template_firmware_upload_v2.png?raw=true "Default template")
+
+### Resume upload
+Another template provided is a simple job posting, where you write some basic info and upload a resume. This template is `resume_upload`.
+
+![Template Resume](docs/template_resume.png?raw=true "Resume template")
+
+### Resume upload
+A more complete template is `blog_upload`. The "blog" is hosted at `/` and it has a "hidden" admin page for uploading posts at `/admin.html`. The admin file is listed as disallow in `robots.txt`. The blog posts are under `/posts/`. 
+
+![Template Blog](docs/template_blog_index.png?raw=true "Blog template")
+
+![Template Blog Post](docs/template_blog_post.png?raw=true "Blog post")
+
+![Template Blog Upload](docs/template_blog_upload.png?raw=true "Blog admin upload")
+
 
 ## VirusTotal
 Once the file is uploaded, it will be written to the "uploads" folder and then checked against VirusTotal, and uploaded if it is unique, as mentioned above. The log file will state that a file is uploaded, its hash will be listed, and some basic information about the VirusTotal upload will be outputted. 
