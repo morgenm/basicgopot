@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>IP Camera Firmware Upload</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2 {
+      color: #333;
+    }
+
+    form {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    label {
+      display: inline-block;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    select,
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      margin-bottom: 20px;
+    }
+
+    input[type="submit"] {
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    input[type="submit"]:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h2>IP Camera Firmware Upload</h2>
+
+  <form action="/upload" method="post" enctype="multipart/form-data">
+    <label for="cameraName">Camera ID:</label>
+    <select id="cameraName" name="cameraName" required>
+      <option value="" selected disabled>Select a camera name</option>
+      <option value="Outdoor 1A">Outdoor 1A</option>
+      <option value="Outdoor 1B">Outdoor 1B</option>
+      <option value="Outdoor 2">Outdoor 2</option>
+      <option value="Indoor Hallway 1">Indoor Hallway 1</option>
+      <option value="Indoor Hallway 2">Indoor Hallway 2</option>
+    </select><br><br>
+
+    <label for="fileupload">Firmware File:</label>
+    <input type="file" id="fileupload" name="fileupload" required><br><br>
+
+    <input type="submit" value="Upload Firmware">
+  </form>
+</body>
+</html>
