@@ -142,7 +142,10 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 									if checkErr(err, "Failed to create file!") { // Successfully opened file
 										return
 									} else {
-										outFile.Write(body)
+										_, err  = outFile.Write(body)
+										if checkErr(err, "Error writing scan analysis JSON to file!") {
+											return
+										}
 									}
 									if checkErr(outFile.Close(), "Error closing the scan analysis file!") {
 										return
