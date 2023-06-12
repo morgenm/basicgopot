@@ -13,7 +13,7 @@ I put a workflow in place using the [Horusec](https://horusec.io/site/) SAST eng
 
 ## Templates
 ### Default template
-The screenshot below displays the default template, firmware_update_v2. It is a basic file upload form disguised as a firmware update upload. This template is named `firmware_update_v2`.
+The screenshot below displays the default template. It is a basic file upload form disguised as a firmware update upload. This template is named `firmware_update_v2`.
 
 ![Template Firmware Upload v2](docs/template_firmware_upload_v2.png?raw=true "Default template")
 
