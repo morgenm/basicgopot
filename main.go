@@ -27,5 +27,5 @@ func main() {
 	}
 
 	// Start the server
-    runServer(config);
+	runServer(config)
 }

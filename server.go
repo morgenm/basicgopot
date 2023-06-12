@@ -1,17 +1,17 @@
 package main
 
 import (
-	"fmt"
-    "net/http"
-	"log"
-	"os"
-	"time"
-	"crypto/sha256"
-	"io"
 	"bytes"
-	"mime/multipart"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"mime/multipart"
+	"net/http"
+	"os"
 	"path/filepath"
+	"time"
 )
 
 func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName string, data []byte) {
@@ -38,11 +38,11 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 				} else {
 					body, err := io.ReadAll(resp.Body)
 					if !checkErr(err, "Error on reading body!") { // Successfully read body
-						
+
 					}
-					
+
 					// Write JSON to file
-					scanFilepath := filepath.Clean(filepath.Join("scans/", time.Now().Format(time.UnixDate) + " " + outFileName+".json"));
+					scanFilepath := filepath.Clean(filepath.Join("scans/", time.Now().Format(time.UnixDate)+" "+outFileName+".json"))
 					outFile, err := os.Create(scanFilepath)
 					if !checkErr(err, "Failed to create file!") { // Successfully opened file
 						_, err = outFile.Write(body)
@@ -100,18 +100,18 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 					} else {
 						body, err := io.ReadAll(resp.Body)
 						if !checkErr(err, "Error on reading body!") { // Successfully read body
-							
+
 						}
-	
+
 						// Get analysis URL from response
 						var decoded map[string]interface{}
-    					if checkErr(json.Unmarshal([]byte(body), &decoded), "Error unmarshalling JSON analysis from VirusTotal!") {
+						if checkErr(json.Unmarshal([]byte(body), &decoded), "Error unmarshalling JSON analysis from VirusTotal!") {
 							return
 						}
 						jData := decoded["data"].(map[string]interface{})
 						jLinks := jData["links"].(map[string]interface{})
 						analysisUrl, _ := jLinks["self"].(string)
-						
+
 						// This isn't a great solution, but going to sleep 30 seconds for analysis to complete
 						log.Print("Waiting for analysis to complete...")
 						time.Sleep(30 * time.Second)
@@ -132,17 +132,17 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 								} else {
 									body, err := io.ReadAll(resp.Body)
 									if !checkErr(err, "Error on reading body!") { // Successfully read body
-										
+
 									}
-									
+
 									// Write JSON to file
-									scanFilename := time.Now().Format(time.UnixDate) + " " + outFileName+".json";
+									scanFilename := time.Now().Format(time.UnixDate) + " " + outFileName + ".json"
 									scanFilepath := filepath.Clean(filepath.Join("scans/", scanFilename))
 									outFile, err := os.Create(scanFilepath)
 									if checkErr(err, "Failed to create file!") { // Successfully opened file
 										return
 									} else {
-										_, err  = outFile.Write(body)
+										_, err = outFile.Write(body)
 										if checkErr(err, "Error writing scan analysis JSON to file!") {
 											return
 										}
@@ -166,7 +166,7 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 
 func (config *Config) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Set file size limit for the upload
-	if checkErr(r.ParseMultipartForm(config.UploadLimitMB << 20), "Error parsing upload form!") {
+	if checkErr(r.ParseMultipartForm(config.UploadLimitMB<<20), "Error parsing upload form!") {
 		return
 	}
 
@@ -181,14 +181,14 @@ func (config *Config) fileUploadHandler(w http.ResponseWriter, r *http.Request) 
 	log.Print("File being uploaded by user...")
 
 	// Create file for writing. TODO: Make writing optional in config
-	uploadFilename := time.Now().Format(time.UnixDate);
+	uploadFilename := time.Now().Format(time.UnixDate)
 	uploadFilepath := filepath.Clean(filepath.Join("uploads/", uploadFilename))
 	outFile, err := os.Create(uploadFilepath)
 	checkErr(err, "Failed to create file!")
 
 	// Read uploaded file to byte array
 	data, err := io.ReadAll(file)
-	if checkErr(err, "Failed to read uploaded file!")  {
+	if checkErr(err, "Failed to read uploaded file!") {
 		return
 	}
 
@@ -208,14 +208,14 @@ func (config *Config) fileUploadHandler(w http.ResponseWriter, r *http.Request) 
 	// Get file hash
 	hasher := sha256.New()
 	_, err = hasher.Write(data)
-	if checkErr(err, "Error getting file hash!")  {
+	if checkErr(err, "Error getting file hash!") {
 		return
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 	log.Print("File hash: ", hash)
 
 	// Get file size
-	fileSize := float64(handler.Size) / (1024* 1024) // Size in MB
+	fileSize := float64(handler.Size) / (1024 * 1024) // Size in MB
 
 	go checkVirusTotal(config, hash, fileSize, uploadFilename, data)
 }
@@ -232,4 +232,3 @@ func runServer(config *Config) {
 	log.Print("Server listening on port ", portStr)
 	checkErr(http.ListenAndServe(portStr, nil), "Error while listening and serving!")
 }
-

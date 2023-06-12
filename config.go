@@ -1,17 +1,17 @@
 // Code for handling JSON config file
 package main
 
-import(
+import (
 	"encoding/json"
 	"io/ioutil"
 )
 
 type Config struct {
-	ServerPort			int
-	UploadLimitMB		int64 // Upload file size limit in Megabytes
-	UseVirusTotal		bool // Whether or not to use VT
-	UploadVirusTotal	bool // Whether to upload to VT
-	VirusTotalApiKey	string
+	ServerPort       int
+	UploadLimitMB    int64 // Upload file size limit in Megabytes
+	UseVirusTotal    bool  // Whether or not to use VT
+	UploadVirusTotal bool  // Whether to upload to VT
+	VirusTotalApiKey string
 }
 
 func readConfig() (*Config, error) {
