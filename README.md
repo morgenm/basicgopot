@@ -22,7 +22,7 @@ Another template provided is a simple job posting, where you write some basic in
 
 ![Template Resume](docs/template_resume.png?raw=true "Resume template")
 
-### Resume upload
+### Blog post upload
 A more complete template is `blog_upload`. The "blog" is hosted at `/` and it has a "hidden" admin page for uploading posts at `/admin.html`. The admin file is listed as disallow in `robots.txt`. The blog posts are under `/posts/`. 
 
 ![Template Blog](docs/template_blog_index.png?raw=true "Blog template")
