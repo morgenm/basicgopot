@@ -25,4 +25,4 @@ jobs:
       run: go build -v ./...
 
     - name: Vet
-      run: got vet .
+      run: go vet .
