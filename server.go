@@ -8,6 +8,9 @@ import (
 	"time"
 	"crypto/sha256"
 	"io"
+	"bytes"
+	"mime/multipart"
+	"encoding/json"
 )
 
 func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName string, data []byte) {
@@ -36,7 +39,7 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 					if !checkErr(err, "Error on reading body!") { // Successfully read body
 						
 					}
-
+					
 					// Write JSON to file
 					scanFilename := "scans/" + time.Now().Format(time.UnixDate) + " " + outFileName+".json";
 					outFile, err := os.Create(scanFilename)
@@ -44,6 +47,8 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 						outFile.Write(body)
 					}
 					defer outFile.Close()
+
+					log.Print("File already on VirusTotal, writing scan results.")
 				}
 			}
 		}
@@ -54,6 +59,87 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 		// Check if file is greater than 32 MBs, which is the max upload size for VT Community
 		if fileSize < 32.0 {
 			log.Print("Uploading to VirusTotal...")
+
+			// Create form file for upload
+			buf := new(bytes.Buffer)
+			reader := bytes.NewReader(data) // Create bytes reader for data
+			writer := multipart.NewWriter(buf)
+			formFile, err := writer.CreateFormFile("file", outFileName)
+			if checkErr(err, "Error creating form file for upload!") {
+				return
+			}
+
+			if _, err = io.Copy(formFile, reader); err != nil {
+				log.Print("error")
+			}
+			writer.Close()
+
+			// Make POST request
+			client := &http.Client{}
+			requestUrl := "https://www.virustotal.com/api/v3/files"
+			req, err := http.NewRequest("POST", requestUrl, buf)
+
+			if !checkErr(err, "Error forming request") {
+				req.Header.Add("accept", "application/json")
+				req.Header.Add("x-apikey", config.VirusTotalApiKey)
+				req.Header.Add("Content-Type", writer.FormDataContentType())
+				req.Header.Add("boundary", writer.Boundary())
+
+				resp, err := client.Do(req)
+				if !checkErr(err, "Error on POST request for VT report from file upload") { // If success on GET request
+					if resp.StatusCode == 401 {
+						log.Print("Error: VirusTotal authentication failed! Check your API key in config.json!")
+					} else {
+						body, err := io.ReadAll(resp.Body)
+						if !checkErr(err, "Error on reading body!") { // Successfully read body
+							
+						}
+	
+						// Get analysis URL from response
+						var decoded map[string]interface{}
+    					json.Unmarshal([]byte(body), &decoded)
+						jData := decoded["data"].(map[string]interface{})
+						jLinks := jData["links"].(map[string]interface{})
+						analysisUrl, _ := jLinks["self"].(string)
+						
+						// This isn't a great solution, but going to sleep 30 seconds for analysis to complete
+						log.Print("Waiting for analysis to complete...")
+						time.Sleep(30 * time.Second)
+
+						// Make get request for analysis
+						client := &http.Client{}
+						req, err := http.NewRequest("GET", analysisUrl, nil)
+
+						if !checkErr(err, "Error forming request") {
+							req.Header.Add("x-apikey", config.VirusTotalApiKey)
+							resp, err := client.Do(req)
+							if !checkErr(err, "Error on GET request for VT report from hash") { // If success on GET request
+								if resp.StatusCode == 401 {
+									log.Print("Error: VirusTotal authentication failed! Check your API key in config.json!")
+								} else if resp.StatusCode == 404 {
+									log.Print("Error file analysis not found!")
+									alreadyOnVT = false
+								} else {
+									body, err := io.ReadAll(resp.Body)
+									if !checkErr(err, "Error on reading body!") { // Successfully read body
+										
+									}
+									
+									// Write JSON to file
+									scanFilename := "scans/" + time.Now().Format(time.UnixDate) + " " + outFileName+".json";
+									outFile, err := os.Create(scanFilename)
+									if !checkErr(err, "Failed to create file!") { // Successfully opened file
+										outFile.Write(body)
+									}
+									defer outFile.Close()
+
+									log.Print("File analysis retrieved from VirusTotal, writing scan results.")
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 
