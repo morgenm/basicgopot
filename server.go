@@ -10,16 +10,7 @@ import (
 	"crypto/sha256"
 )
 
-func checkErr(err error, outString string) bool {
-	if err != nil {
-		log.Print(outString, " ", err)
-		return true
-	} else {
-		return false
-	}
-}
-
-func fileUploadHandler(w http.ResponseWriter, r *http.Request) {
+func (config *Config) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	file, handler, err := r.FormFile("fileupload")
 	if err != nil {
 		log.Print("File upload from user failed! ", err)
@@ -58,25 +49,30 @@ func fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	log.Print("File hash: ", hash)
 
 
-	// Check if on VirusTotal. TODO: Make VT optional
+	// Check if on VirusTotal
+	if config.UseVirusTotal {
+		log.Print("Checking hash against VirusTotal...")
+	}
 
-	// Upload to virus total. TODO: Make file upload optional
+	// Upload to virus total
+	if config.UseVirusTotal && config.UploadVirusTotal {
+		log.Print("Uploading to VirusTotal...")
+	}
 
 	// Update JSON upload log
 
 }
 
-func main() {
-	// TODO: create upload directory 
-
-    server := http.FileServer(http.Dir("./static"))
+func runServer(config *Config) {
+	server := http.FileServer(http.Dir("./static"))
 	http.Handle("/", server)
 
 	// File upload handler setup
-	http.HandleFunc("/upload", fileUploadHandler)
+	http.HandleFunc("/upload", config.fileUploadHandler)
 
-
-	port := ":8080"
-	log.Print("Server listening on port ", port)
-	http.ListenAndServe(port, nil)
+	// Listen
+	portStr := fmt.Sprintf(":%d", config.ServerPort)
+	log.Print("Server listening on port ", portStr)
+	http.ListenAndServe(portStr, nil)
 }
+

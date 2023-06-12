@@ -1,0 +1,6 @@
+{
+    "ServerPort" : 8080,
+    "UseVirusTotal" : true,
+    "UploadVirusTotal" : true,
+    "VirusTotalApiKey" : "KEY"
+}
