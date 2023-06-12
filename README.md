@@ -10,3 +10,8 @@ For using VirusTotal you will need to put your API key in the config. Any files 
 As of right now, if the file already has been uploaded to VirusTotal, the honeypot will download the entire file data. But, if it is unique, it will upload the file and grab the analysis results (after waiting a short time). For the latter, I would recommend opening up the analysis in a browser by grabbing the hash from the analysis scan result and putting it into VirusTotal manually.
 
 I put a workflow in place using the [Horusec](https://horusec.io/site/) SAST engine to check for vulnerabilities in the code.
+
+## Default template
+The screenshot below displays the default template, firmware_update_v2. It is a basic file upload form disguised as a firmware update upload.
+
+![Template Firmware Upload v2](docs/template_firmware_upload_v2.png?raw=true "Default template")
