@@ -8,3 +8,5 @@ It serves HTML files that are put in the `static` directory. I included a very r
 For using VirusTotal you will need to put your API key in the config. Any files uploaded to the server will be in the `uploads` directory, and VirusTotal results are in the `scans` directory.
 
 As of right now, if the file already has been uploaded to VirusTotal, the honeypot will download the entire file data. But, if it is unique, it will upload the file and grab the analysis results (after waiting a short time). For the latter, I would recommend opening up the analysis in a browser by grabbing the hash from the analysis scan result and putting it into VirusTotal manually.
+
+I put a workflow in place using the [Horusec](https://horusec.io/site/) SAST engine to check for vulnerabilities in the code.
