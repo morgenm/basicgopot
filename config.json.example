@@ -1,6 +1,7 @@
 {
     "ServerPort" : 8080,
+    "UploadLimitMB" : 512,
     "UseVirusTotal" : true,
     "UploadVirusTotal" : true,
-    "VirusTotalApiKey" : "KEY"
+    "VirusTotalApiKey" : "lol"
 }

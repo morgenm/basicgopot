@@ -8,6 +8,7 @@ import(
 
 type Config struct {
 	ServerPort			int
+	UploadLimitMB		int64 // Upload file size limit in Megabytes
 	UseVirusTotal		bool // Whether or not to use VT
 	UploadVirusTotal	bool // Whether to upload to VT
 	VirusTotalApiKey	string

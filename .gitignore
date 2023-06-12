@@ -22,7 +22,10 @@ basicgopot
 go.work
 
 # Upload directory 
-uploads/*
+uploads
 
 # Config
 config.json
+
+# Scan results
+scans
