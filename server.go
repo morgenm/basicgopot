@@ -45,9 +45,14 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 					scanFilepath := filepath.Clean(filepath.Join("scans/", time.Now().Format(time.UnixDate) + " " + outFileName+".json"));
 					outFile, err := os.Create(scanFilepath)
 					if !checkErr(err, "Failed to create file!") { // Successfully opened file
-						outFile.Write(body)
+						_, err = outFile.Write(body)
+						if checkErr(err, "Error writing scan to file!") {
+							return
+						}
 					}
-					defer outFile.Close()
+					if checkErr(outFile.Close(), "Error closing new scan file!") {
+						return
+					}
 
 					log.Print("File already on VirusTotal, writing scan results.")
 				}
@@ -137,7 +142,9 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 									} else {
 										return
 									}
-									outFile.Close()
+									if checkErr(outFile.Close(), "Error closing the scan analysis file!") {
+										return
+									}
 
 									log.Print("File analysis retrieved from VirusTotal, writing scan results.")
 								}
@@ -182,8 +189,12 @@ func (config *Config) fileUploadHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Write to file
 	_, err = outFile.Write(data)
-	checkErr(err, "Error writing to file!")
-	outFile.Close()
+	if checkErr(err, "Error writing the uploaded file!") {
+		return
+	}
+	if checkErr(outFile.Close(), "Error closing the new uploaded file!") {
+		return
+	}
 
 	// Inform user of success
 	fmt.Fprintf(w, "File uploaded!")
