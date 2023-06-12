@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Bio - GetWorkNow</title>
+  
+  <link rel="stylesheet" href="uploadscreen.css">
+</head>
+<body>
+
+
+  <h2>My Resume - GetWorkNow</h2>
+
+  <form action="/upload" method="post" enctype="multipart/form-data">
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" required><br>
+
+    <label for="email">Email:</label>
+    <input type="text" id="email" name="email" required><br>
+
+    <label for="bio">Short Bio:</label>
+    <textarea id="bio" name="bio" rows="5" required></textarea><br>
+
+    <label for="fileupload">Upload Resume:</label>
+    <input type="file" id="fileupload" name="fileupload" required><br>
+
+    <input type="submit" value="Submit">
+  </form>
+</body>
+</html>

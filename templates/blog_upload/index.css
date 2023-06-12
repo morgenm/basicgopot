@@ -1,0 +1,40 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f2f2f2;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+color: #333;
+}
+
+.post-list {
+list-style-type: none;
+padding: 0;
+}
+
+.post-list li {
+margin-bottom: 20px;
+border-bottom: 1px solid #ccc;
+padding-bottom: 10px;
+}
+
+.post-list li:last-child {
+border-bottom: none;
+}
+
+.post-title {
+font-size: 18px;
+margin-bottom: 5px;
+}
+
+.post-description {
+color: #666;
+font-size: 14px;
+}
+
+.post-link {
+color: #333;
+text-decoration: none;
+}
