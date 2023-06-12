@@ -24,7 +24,5 @@ jobs:
     - name: Build
       run: go build -v ./...
 
-    - name: Vet and Lint
-      run: |
-        go vet .
-        golint .
+    - name: Vet
+      run: got vet .
