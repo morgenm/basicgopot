@@ -32,8 +32,6 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 					log.Print("File not yet uploaded to VirusTotal.")
 					alreadyOnVT = false
 				} else {
-					log.Print(resp.StatusCode)
-
 					body, err := io.ReadAll(resp.Body)
 					if !checkErr(err, "Error on reading body!") { // Successfully read body
 						
