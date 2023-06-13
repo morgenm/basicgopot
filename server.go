@@ -38,23 +38,21 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 				} else {
 					body, err := io.ReadAll(resp.Body)
 					if !checkErr(err, "Error on reading body!") { // Successfully read body
-
-					}
-
-					// Write JSON to file
-					scanFilepath := filepath.Clean(filepath.Join("scans/", time.Now().Format(time.UnixDate)+" "+outFileName+".json"))
-					outFile, err := os.Create(scanFilepath)
-					if !checkErr(err, "Failed to create file!") { // Successfully opened file
-						_, err = outFile.Write(body)
-						if checkErr(err, "Error writing scan to file!") {
+						// Write JSON to file
+						scanFilepath := filepath.Clean(filepath.Join("scans/", time.Now().Format(time.UnixDate)+" "+outFileName+".json"))
+						outFile, err := os.Create(scanFilepath)
+						if !checkErr(err, "Failed to create file!") { // Successfully opened file
+							_, err = outFile.Write(body)
+							if checkErr(err, "Error writing scan to file!") {
+								return
+							}
+						}
+						if checkErr(outFile.Close(), "Error closing new scan file!") {
 							return
 						}
-					}
-					if checkErr(outFile.Close(), "Error closing new scan file!") {
-						return
-					}
 
-					log.Print("File already on VirusTotal, writing scan results.")
+						log.Print("File already on VirusTotal, writing scan results.")
+					}
 				}
 			}
 		}
@@ -100,58 +98,53 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 					} else {
 						body, err := io.ReadAll(resp.Body)
 						if !checkErr(err, "Error on reading body!") { // Successfully read body
+							// Get analysis URL from response
+							var decoded map[string]interface{}
+							if checkErr(json.Unmarshal([]byte(body), &decoded), "Error unmarshalling JSON analysis from VirusTotal!") {
+								return
+							}
+							jData := decoded["data"].(map[string]interface{})
+							jLinks := jData["links"].(map[string]interface{})
+							analysisUrl, _ := jLinks["self"].(string)
 
-						}
+							// This isn't a great solution, but going to sleep 30 seconds for analysis to complete
+							log.Print("Waiting for analysis to complete...")
+							time.Sleep(30 * time.Second)
 
-						// Get analysis URL from response
-						var decoded map[string]interface{}
-						if checkErr(json.Unmarshal([]byte(body), &decoded), "Error unmarshalling JSON analysis from VirusTotal!") {
-							return
-						}
-						jData := decoded["data"].(map[string]interface{})
-						jLinks := jData["links"].(map[string]interface{})
-						analysisUrl, _ := jLinks["self"].(string)
+							// Make get request for analysis
+							client := &http.Client{}
+							req, err := http.NewRequest("GET", analysisUrl, nil)
 
-						// This isn't a great solution, but going to sleep 30 seconds for analysis to complete
-						log.Print("Waiting for analysis to complete...")
-						time.Sleep(30 * time.Second)
-
-						// Make get request for analysis
-						client := &http.Client{}
-						req, err := http.NewRequest("GET", analysisUrl, nil)
-
-						if !checkErr(err, "Error forming request") {
-							req.Header.Add("x-apikey", config.VirusTotalApiKey)
-							resp, err := client.Do(req)
-							if !checkErr(err, "Error on GET request for VT report from hash") { // If success on GET request
-								if resp.StatusCode == 401 {
-									log.Print("Error: VirusTotal authentication failed! Check your API key in config.json!")
-								} else if resp.StatusCode == 404 {
-									log.Print("Error file analysis not found!")
-									alreadyOnVT = false
-								} else {
-									body, err := io.ReadAll(resp.Body)
-									if !checkErr(err, "Error on reading body!") { // Successfully read body
-
-									}
-
-									// Write JSON to file
-									scanFilename := time.Now().Format(time.UnixDate) + " " + outFileName + ".json"
-									scanFilepath := filepath.Clean(filepath.Join("scans/", scanFilename))
-									outFile, err := os.Create(scanFilepath)
-									if checkErr(err, "Failed to create file!") { // Successfully opened file
-										return
+							if !checkErr(err, "Error forming request") {
+								req.Header.Add("x-apikey", config.VirusTotalApiKey)
+								resp, err := client.Do(req)
+								if !checkErr(err, "Error on GET request for VT report from hash") { // If success on GET request
+									if resp.StatusCode == 401 {
+										log.Print("Error: VirusTotal authentication failed! Check your API key in config.json!")
+									} else if resp.StatusCode == 404 {
+										log.Print("Error file analysis not found!")
 									} else {
-										_, err = outFile.Write(body)
-										if checkErr(err, "Error writing scan analysis JSON to file!") {
-											return
+										body, err := io.ReadAll(resp.Body)
+										if !checkErr(err, "Error on reading body!") { // Successfully read body
+											// Write JSON to file
+											scanFilename := time.Now().Format(time.UnixDate) + " " + outFileName + ".json"
+											scanFilepath := filepath.Clean(filepath.Join("scans/", scanFilename))
+											outFile, err := os.Create(scanFilepath)
+											if checkErr(err, "Failed to create file!") { // Successfully opened file
+												return
+											} else {
+												_, err = outFile.Write(body)
+												if checkErr(err, "Error writing scan analysis JSON to file!") {
+													return
+												}
+											}
+											if checkErr(outFile.Close(), "Error closing the scan analysis file!") {
+												return
+											}
+
+											log.Print("File analysis retrieved from VirusTotal, writing scan results.")
 										}
 									}
-									if checkErr(outFile.Close(), "Error closing the scan analysis file!") {
-										return
-									}
-
-									log.Print("File analysis retrieved from VirusTotal, writing scan results.")
 								}
 							}
 						}
