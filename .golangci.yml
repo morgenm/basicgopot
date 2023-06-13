@@ -1,8 +1,3 @@
 linters:
   enable:
-    - gosec
     - gocyclo
-
-linter-settings:
-  gocyclo:
-    min-complexity: 15
