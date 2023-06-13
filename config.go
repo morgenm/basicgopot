@@ -2,8 +2,9 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 )
 
 type Config struct {
@@ -15,11 +16,26 @@ type Config struct {
 }
 
 func readConfig() (*Config, error) {
-	data, err := ioutil.ReadFile("config.json")
-	if err != nil {
+	f, err := os.Open("config.json")
+	if checkErr(err, "Error opening config file!") {
+		return nil, err
+	}
+	defer f.Close()
+
+	// Read the config file
+	scanner := bufio.NewScanner(f)
+	var data []byte
+
+	for scanner.Scan() { // Reading lime-by-line
+		line := scanner.Bytes()
+		data = append(data, line...)
+		data = append(data, '\n')
+	}
+	if checkErr(scanner.Err(), "Error reading config file!") {
 		return nil, err
 	}
 
+	// Create the config from the file
 	var config Config
 
 	err = json.Unmarshal(data, &config)
