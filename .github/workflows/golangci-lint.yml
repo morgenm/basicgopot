@@ -4,6 +4,7 @@ on:
     branches:
       - master
       - main
+      - feature-golangci
   pull_request:
 
 permissions:
