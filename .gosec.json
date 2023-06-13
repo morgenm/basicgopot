@@ -4,7 +4,6 @@
     },
 
     "G101": {
-        "pattern": "(?i)passwd|pass|password|pwd|secret|private_key|token|[a-f1-9]{64}",
         "ignore_entropy": true
     }
 }
