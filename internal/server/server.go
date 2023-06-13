@@ -16,7 +16,12 @@ import (
 	"github.com/morgenm/basicgopot/internal/config"
 )
 
-func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileName string, data []byte) {
+func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileName string, data []byte) error {
+	// Check if valid hash
+	if len(hash) != 64 {
+		return &errors.InvalidHashError{}
+	}
+	
 	alreadyOnVT := true
 
 	// Check if on VirusTotal
@@ -34,6 +39,7 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 			if !errors.CheckErr(err, "Error on GET request for VT report from hash") { // If success on GET request
 				if resp.StatusCode == 401 {
 					log.Print("Error: VirusTotal authentication failed! Check your API key in config.json!")
+					return &errors.VirusTotalAPIKeyError{}
 				} else if resp.StatusCode == 404 {
 					log.Print("File not yet uploaded to VirusTotal.")
 					alreadyOnVT = false
@@ -46,17 +52,19 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 						if !errors.CheckErr(err, "Failed to create file!") { // Successfully opened file
 							_, err = outFile.Write(body)
 							if errors.CheckErr(err, "Error writing scan to file!") {
-								return
+								return err
 							}
 						}
 						if errors.CheckErr(outFile.Close(), "Error closing new scan file!") {
-							return
+							return err
 						}
 
 						log.Print("File already on VirusTotal, writing scan results.")
 					}
 				}
 			}
+		} else {
+			return err
 		}
 	}
 
@@ -72,14 +80,14 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 			writer := multipart.NewWriter(buf)
 			formFile, err := writer.CreateFormFile("file", outFileName)
 			if errors.CheckErr(err, "Error creating form file for upload!") {
-				return
+				return err
 			}
 
 			if _, err = io.Copy(formFile, reader); err != nil {
 				log.Print("error")
 			}
 			if errors.CheckErr(writer.Close(), "Error closing multipart form!") {
-				return
+				return err
 			}
 
 			// Make POST request
@@ -97,13 +105,14 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 				if !errors.CheckErr(err, "Error on POST request for VT report from file upload") { // If success on GET request
 					if resp.StatusCode == 401 {
 						log.Print("Error: VirusTotal authentication failed! Check your API key in config.json!")
+						//return &errors.VirusTotalAPIKeyError{}
 					} else {
 						body, err := io.ReadAll(resp.Body)
 						if !errors.CheckErr(err, "Error on reading body!") { // Successfully read body
 							// Get analysis URL from response
 							var decoded map[string]interface{}
 							if errors.CheckErr(json.Unmarshal([]byte(body), &decoded), "Error unmarshalling JSON analysis from VirusTotal!") {
-								return
+								return err
 							}
 							jData := decoded["data"].(map[string]interface{})
 							jLinks := jData["links"].(map[string]interface{})
@@ -123,6 +132,7 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 								if !errors.CheckErr(err, "Error on GET request for VT report from hash") { // If success on GET request
 									if resp.StatusCode == 401 {
 										log.Print("Error: VirusTotal authentication failed! Check your API key in config.json!")
+										//return &VirusTotalAPIKeyError{}
 									} else if resp.StatusCode == 404 {
 										log.Print("Error file analysis not found!")
 									} else {
@@ -133,15 +143,15 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 											scanFilepath := filepath.Clean(filepath.Join("scans/", scanFilename))
 											outFile, err := os.Create(scanFilepath)
 											if errors.CheckErr(err, "Failed to create file!") { // Successfully opened file
-												return
+												return err
 											} else {
 												_, err = outFile.Write(body)
 												if errors.CheckErr(err, "Error writing scan analysis JSON to file!") {
-													return
+													return err
 												}
 											}
 											if errors.CheckErr(outFile.Close(), "Error closing the scan analysis file!") {
-												return
+												return err
 											}
 
 											log.Print("File analysis retrieved from VirusTotal, writing scan results.")
@@ -157,6 +167,7 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 	}
 
 	// Update JSON upload log
+	return nil
 }
 
 type FileUploadHandler struct {
