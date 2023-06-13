@@ -1,10 +1,11 @@
 // Code for handling JSON config file
-package main
+package config
 
 import (
 	"bufio"
 	"encoding/json"
 	"os"
+	"github.com/morgenm/basicgopot/internal/errors"
 )
 
 type Config struct {
@@ -15,9 +16,9 @@ type Config struct {
 	VirusTotalApiKey string
 }
 
-func readConfig() (*Config, error) {
+func ReadConfig() (*Config, error) {
 	f, err := os.Open("config.json")
-	if checkErr(err, "Error opening config file!") {
+	if errors.CheckErr(err, "Error opening config file!") {
 		return nil, err
 	}
 	defer f.Close()
@@ -31,7 +32,7 @@ func readConfig() (*Config, error) {
 		data = append(data, line...)
 		data = append(data, '\n')
 	}
-	if checkErr(scanner.Err(), "Error reading config file!") {
+	if errors.CheckErr(scanner.Err(), "Error reading config file!") {
 		return nil, err
 	}
 

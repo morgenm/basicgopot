@@ -1,11 +1,11 @@
 // Error handling
-package main
+package errors
 
 import (
 	"log"
 )
 
-func checkErr(err error, outString string) bool {
+func CheckErr(err error, outString string) bool {
 	if err != nil {
 		log.Print(outString, " ", err)
 		return true

@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"bytes"
@@ -12,13 +12,15 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"github.com/morgenm/basicgopot/internal/errors"
+	"github.com/morgenm/basicgopot/internal/config"
 )
 
-func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName string, data []byte) {
+func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileName string, data []byte) {
 	alreadyOnVT := true
 
 	// Check if on VirusTotal
-	if config.UseVirusTotal {
+	if cfg.UseVirusTotal {
 		log.Print("Checking hash against VirusTotal...")
 
 		// Make get request
@@ -26,10 +28,10 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 		requestUrl := fmt.Sprintf("https://www.virustotal.com/api/v3/files/%s", hash)
 		req, err := http.NewRequest("GET", requestUrl, nil)
 
-		if !checkErr(err, "Error forming request") {
-			req.Header.Add("x-apikey", config.VirusTotalApiKey)
+		if !errors.CheckErr(err, "Error forming request") {
+			req.Header.Add("x-apikey", cfg.VirusTotalApiKey)
 			resp, err := client.Do(req)
-			if !checkErr(err, "Error on GET request for VT report from hash") { // If success on GET request
+			if !errors.CheckErr(err, "Error on GET request for VT report from hash") { // If success on GET request
 				if resp.StatusCode == 401 {
 					log.Print("Error: VirusTotal authentication failed! Check your API key in config.json!")
 				} else if resp.StatusCode == 404 {
@@ -37,17 +39,17 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 					alreadyOnVT = false
 				} else {
 					body, err := io.ReadAll(resp.Body)
-					if !checkErr(err, "Error on reading body!") { // Successfully read body
+					if !errors.CheckErr(err, "Error on reading body!") { // Successfully read body
 						// Write JSON to file
 						scanFilepath := filepath.Clean(filepath.Join("scans/", time.Now().Format(time.UnixDate)+" "+outFileName+".json"))
 						outFile, err := os.Create(scanFilepath)
-						if !checkErr(err, "Failed to create file!") { // Successfully opened file
+						if !errors.CheckErr(err, "Failed to create file!") { // Successfully opened file
 							_, err = outFile.Write(body)
-							if checkErr(err, "Error writing scan to file!") {
+							if errors.CheckErr(err, "Error writing scan to file!") {
 								return
 							}
 						}
-						if checkErr(outFile.Close(), "Error closing new scan file!") {
+						if errors.CheckErr(outFile.Close(), "Error closing new scan file!") {
 							return
 						}
 
@@ -59,7 +61,7 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 	}
 
 	// Upload to virus total
-	if config.UseVirusTotal && config.UploadVirusTotal && !alreadyOnVT {
+	if cfg.UseVirusTotal && cfg.UploadVirusTotal && !alreadyOnVT {
 		// Check if file is greater than 32 MBs, which is the max upload size for VT Community
 		if fileSize < 32.0 {
 			log.Print("Uploading to VirusTotal...")
@@ -69,14 +71,14 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 			reader := bytes.NewReader(data) // Create bytes reader for data
 			writer := multipart.NewWriter(buf)
 			formFile, err := writer.CreateFormFile("file", outFileName)
-			if checkErr(err, "Error creating form file for upload!") {
+			if errors.CheckErr(err, "Error creating form file for upload!") {
 				return
 			}
 
 			if _, err = io.Copy(formFile, reader); err != nil {
 				log.Print("error")
 			}
-			if checkErr(writer.Close(), "Error closing multipart form!") {
+			if errors.CheckErr(writer.Close(), "Error closing multipart form!") {
 				return
 			}
 
@@ -85,22 +87,22 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 			requestUrl := "https://www.virustotal.com/api/v3/files"
 			req, err := http.NewRequest("POST", requestUrl, buf)
 
-			if !checkErr(err, "Error forming request") {
+			if !errors.CheckErr(err, "Error forming request") {
 				req.Header.Add("accept", "application/json")
-				req.Header.Add("x-apikey", config.VirusTotalApiKey)
+				req.Header.Add("x-apikey", cfg.VirusTotalApiKey)
 				req.Header.Add("Content-Type", writer.FormDataContentType())
 				req.Header.Add("boundary", writer.Boundary())
 
 				resp, err := client.Do(req)
-				if !checkErr(err, "Error on POST request for VT report from file upload") { // If success on GET request
+				if !errors.CheckErr(err, "Error on POST request for VT report from file upload") { // If success on GET request
 					if resp.StatusCode == 401 {
 						log.Print("Error: VirusTotal authentication failed! Check your API key in config.json!")
 					} else {
 						body, err := io.ReadAll(resp.Body)
-						if !checkErr(err, "Error on reading body!") { // Successfully read body
+						if !errors.CheckErr(err, "Error on reading body!") { // Successfully read body
 							// Get analysis URL from response
 							var decoded map[string]interface{}
-							if checkErr(json.Unmarshal([]byte(body), &decoded), "Error unmarshalling JSON analysis from VirusTotal!") {
+							if errors.CheckErr(json.Unmarshal([]byte(body), &decoded), "Error unmarshalling JSON analysis from VirusTotal!") {
 								return
 							}
 							jData := decoded["data"].(map[string]interface{})
@@ -115,30 +117,30 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 							client := &http.Client{}
 							req, err := http.NewRequest("GET", analysisUrl, nil)
 
-							if !checkErr(err, "Error forming request") {
-								req.Header.Add("x-apikey", config.VirusTotalApiKey)
+							if !errors.CheckErr(err, "Error forming request") {
+								req.Header.Add("x-apikey", cfg.VirusTotalApiKey)
 								resp, err := client.Do(req)
-								if !checkErr(err, "Error on GET request for VT report from hash") { // If success on GET request
+								if !errors.CheckErr(err, "Error on GET request for VT report from hash") { // If success on GET request
 									if resp.StatusCode == 401 {
 										log.Print("Error: VirusTotal authentication failed! Check your API key in config.json!")
 									} else if resp.StatusCode == 404 {
 										log.Print("Error file analysis not found!")
 									} else {
 										body, err := io.ReadAll(resp.Body)
-										if !checkErr(err, "Error on reading body!") { // Successfully read body
+										if !errors.CheckErr(err, "Error on reading body!") { // Successfully read body
 											// Write JSON to file
 											scanFilename := time.Now().Format(time.UnixDate) + " " + outFileName + ".json"
 											scanFilepath := filepath.Clean(filepath.Join("scans/", scanFilename))
 											outFile, err := os.Create(scanFilepath)
-											if checkErr(err, "Failed to create file!") { // Successfully opened file
+											if errors.CheckErr(err, "Failed to create file!") { // Successfully opened file
 												return
 											} else {
 												_, err = outFile.Write(body)
-												if checkErr(err, "Error writing scan analysis JSON to file!") {
+												if errors.CheckErr(err, "Error writing scan analysis JSON to file!") {
 													return
 												}
 											}
-											if checkErr(outFile.Close(), "Error closing the scan analysis file!") {
+											if errors.CheckErr(outFile.Close(), "Error closing the scan analysis file!") {
 												return
 											}
 
@@ -158,12 +160,12 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 }
 
 type FileUploadHandler struct {
-	config *Config
+	cfg *config.Config
 }
 
 func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Set file size limit for the upload
-	if checkErr(r.ParseMultipartForm(h.config.UploadLimitMB<<20), "Error parsing upload form!") {
+	if errors.CheckErr(r.ParseMultipartForm(h.cfg.UploadLimitMB<<20), "Error parsing upload form!") {
 		return
 	}
 
@@ -181,20 +183,20 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	uploadFilename := time.Now().Format(time.UnixDate)
 	uploadFilepath := filepath.Clean(filepath.Join("uploads/", uploadFilename))
 	outFile, err := os.Create(uploadFilepath)
-	checkErr(err, "Failed to create file!")
+	errors.CheckErr(err, "Failed to create file!")
 
 	// Read uploaded file to byte array
 	data, err := io.ReadAll(file)
-	if checkErr(err, "Failed to read uploaded file!") {
+	if errors.CheckErr(err, "Failed to read uploaded file!") {
 		return
 	}
 
 	// Write to file
 	_, err = outFile.Write(data)
-	if checkErr(err, "Error writing the uploaded file!") {
+	if errors.CheckErr(err, "Error writing the uploaded file!") {
 		return
 	}
-	if checkErr(outFile.Close(), "Error closing the new uploaded file!") {
+	if errors.CheckErr(outFile.Close(), "Error closing the new uploaded file!") {
 		return
 	}
 
@@ -205,7 +207,7 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Get file hash
 	hasher := sha256.New()
 	_, err = hasher.Write(data)
-	if checkErr(err, "Error getting file hash!") {
+	if errors.CheckErr(err, "Error getting file hash!") {
 		return
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
@@ -214,12 +216,12 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Get file size
 	fileSize := float64(handler.Size) / (1024 * 1024) // Size in MB
 
-	go checkVirusTotal(h.config, hash, fileSize, uploadFilename, data)
+	go checkVirusTotal(h.cfg, hash, fileSize, uploadFilename, data)
 }
 
-func runServer(config *Config) {
+func RunServer(cfg *config.Config) {
 	// Create FileUploadHandler to add route to mux
-	fileUploadHandler := FileUploadHandler{config}
+	fileUploadHandler := FileUploadHandler{cfg}
 
 	// Create FileServer Handler to add route to mux
 	fileServer := http.FileServer(http.Dir("./static"))
@@ -230,7 +232,7 @@ func runServer(config *Config) {
 	mux.Handle("/", fileServer)
 
 	// Create server itself
-	portStr := fmt.Sprintf(":%d", config.ServerPort)
+	portStr := fmt.Sprintf(":%d", cfg.ServerPort)
 	server := &http.Server{
 		Addr:         portStr,
 		Handler:      mux,
@@ -240,5 +242,5 @@ func runServer(config *Config) {
 
 	// Listen
 	log.Print("Server listening on port ", portStr)
-	checkErr(server.ListenAndServe(), "Error while listening and serving!")
+	errors.CheckErr(server.ListenAndServe(), "Error while listening and serving!")
 }
