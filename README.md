@@ -10,7 +10,7 @@
 
 This honeypot is an HTTP server which will allow the user to upload any type of file. The files are written to the uploads directory and then are, by default, passed to VirusTotal to see if they are malicious. The VirusTotal results are written to the scans directory. The server is configurable, see [Configuration](#configuration).
 
-It serves HTML files that are put in the `static` directory. I included a very rudimentary template, which `static` is a symbolic link to. To run this code, rename `config.json.example` to `config.json `and fill in the configuration variables as you see fit. Then run `go run .`
+It serves HTML files that are put in the `static` directory. I included a very rudimentary template, which `static` is a symbolic link to. To run this code, rename `docs/config.json.example` to `config.json` (make sure it's in the top-level directory with all the .go files!) and fill in the configuration variables as you see fit. Then run `go run .`
 
 If you wish to use VirusTotal, you will need to put your API key in the config. Any files uploaded to the server will be in the `uploads` directory, and VirusTotal results will be in the `scans` directory.
 
