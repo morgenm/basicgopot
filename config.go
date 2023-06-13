@@ -2,10 +2,9 @@
 package main
 
 import (
-	"encoding/json"
-	//"io"
-	"os"
 	"bufio"
+	"encoding/json"
+	"os"
 )
 
 type Config struct {

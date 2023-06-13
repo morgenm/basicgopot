@@ -157,9 +157,14 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 	// Update JSON upload log
 }
 
-func (config *Config) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
+type FileUploadHandler struct {
+	config	*Config
+}
+
+
+func (h	FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Set file size limit for the upload
-	if checkErr(r.ParseMultipartForm(config.UploadLimitMB<<20), "Error parsing upload form!") {
+	if checkErr(r.ParseMultipartForm(h.config.UploadLimitMB<<20), "Error parsing upload form!") {
 		return
 	}
 
@@ -210,18 +215,31 @@ func (config *Config) fileUploadHandler(w http.ResponseWriter, r *http.Request) 
 	// Get file size
 	fileSize := float64(handler.Size) / (1024 * 1024) // Size in MB
 
-	go checkVirusTotal(config, hash, fileSize, uploadFilename, data)
+	go checkVirusTotal(h.config, hash, fileSize, uploadFilename, data)
 }
 
 func runServer(config *Config) {
-	server := http.FileServer(http.Dir("./static"))
-	http.Handle("/", server)
+	// Create FileUploadHandler to add route to mux
+	fileUploadHandler := FileUploadHandler { config } 
 
-	// File upload handler setup
-	http.HandleFunc("/upload", config.fileUploadHandler)
+	// Create FileServer Handler to add route to mux
+	fileServer := http.FileServer(http.Dir("./static"))
+
+	// Create mux for server
+	mux := http.NewServeMux()
+	mux.Handle("/upload", fileUploadHandler)
+	mux.Handle("/", fileServer)
+
+	// Create server itself
+	portStr := fmt.Sprintf(":%d", config.ServerPort)
+	server := &http.Server {
+		Addr: portStr,
+		Handler: mux,
+		ReadTimeout: 5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
 
 	// Listen
-	portStr := fmt.Sprintf(":%d", config.ServerPort)
 	log.Print("Server listening on port ", portStr)
-	checkErr(http.ListenAndServe(portStr, nil), "Error while listening and serving!")
+	checkErr(server.ListenAndServe(), "Error while listening and serving!")
 }
