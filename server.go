@@ -158,11 +158,10 @@ func checkVirusTotal(config *Config, hash string, fileSize float64, outFileName 
 }
 
 type FileUploadHandler struct {
-	config	*Config
+	config *Config
 }
 
-
-func (h	FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Set file size limit for the upload
 	if checkErr(r.ParseMultipartForm(h.config.UploadLimitMB<<20), "Error parsing upload form!") {
 		return
@@ -220,7 +219,7 @@ func (h	FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func runServer(config *Config) {
 	// Create FileUploadHandler to add route to mux
-	fileUploadHandler := FileUploadHandler { config } 
+	fileUploadHandler := FileUploadHandler{config}
 
 	// Create FileServer Handler to add route to mux
 	fileServer := http.FileServer(http.Dir("./static"))
@@ -232,10 +231,10 @@ func runServer(config *Config) {
 
 	// Create server itself
 	portStr := fmt.Sprintf(":%d", config.ServerPort)
-	server := &http.Server {
-		Addr: portStr,
-		Handler: mux,
-		ReadTimeout: 5 * time.Second,
+	server := &http.Server{
+		Addr:         portStr,
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 
