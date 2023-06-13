@@ -10,7 +10,7 @@
 
 This honeypot is an HTTP server which will allow the user to upload any type of file. The files are written to the uploads directory and then are, by default, passed to VirusTotal to see if they are malicious. The VirusTotal results are written to the scans directory. The server is configurable, see [Configuration](#configuration).
 
-It serves HTML files that are put in the `static` directory. I included a very rudimentary template, which `static` is a symbolic link to. To run this code, rename `docs/config.json.example` to `config.json` (make sure it's in the top-level directory!) and fill in the configuration variables as you see fit. Then run `go run .`
+It serves HTML files that are put in the `static` directory. I included a very rudimentary template, which `static` is a symbolic link to. To run this code, rename `docs/config.json.example` to `config.json` (make sure it's in the top-level directory!) and fill in the configuration variables as you see fit.
 
 If you wish to use VirusTotal, you will need to put your API key in the config. Any files uploaded to the server will be in the `uploads` directory, and VirusTotal results will be in the `scans` directory.
 
@@ -29,6 +29,11 @@ The configuration for *basicgopot* is stored in `config.json`. An example config
 ```
 
 If `UploadVirusTotal` is false, but `UseVirusTotal` is true, the uploaded samples' hashes will be checked against VirusTotal, but they will not be uploaded. If `UseVirusTotal` is false and `UploadVirusTotal` is true, `UploadVirusTotal` will be ignored, and the samples will just be saved to disk.
+
+## Building/Running
+To run the honeypot, you can simply execute: `go run ./cmd/basicgopot`. 
+
+If you wish to build, you can execute: `go build -o basicgopot.o ./cmd/basicgopot`, where `basicgopot.o` is whatever you wish to name the exectuable. If you do not specify the output name, the binary output will be named `basicgopot` (on Linux), which is not ignored by the .gitignore. This is something to keep in mind if you contribute.
 
 ## VirusTotal
 Once a file is uploaded to the honeypot, it will be written to the "uploads" folder, checked against VirusTotal, and uploaded to VirusTotal if it is unique, as mentioned above. The log file will state that a file is uploaded, its hash will be listed, and some basic information about the VirusTotal upload will be outputted. 
