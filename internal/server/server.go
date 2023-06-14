@@ -227,7 +227,12 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Get file size
 	fileSize := float64(handler.Size) / (1024 * 1024) // Size in MB
 
-	go checkVirusTotal(h.cfg, hash, fileSize, uploadFilename, data)
+	go func() {
+		err := checkVirusTotal(h.cfg, hash, fileSize, uploadFilename, data)
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 }
 
 func RunServer(cfg *config.Config) {

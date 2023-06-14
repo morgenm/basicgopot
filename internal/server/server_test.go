@@ -9,11 +9,11 @@ import (
 
 func TestCheckVirusTotalEmptyHash(t *testing.T) {
 	cfg := config.Config {
-		8080,
-		10,
-		true,
-		true,
-		"test",
+		ServerPort: 8080,
+		UploadLimitMB: 10,
+		UseVirusTotal: true,
+		UploadVirusTotal: true,
+		VirusTotalApiKey: "test",
 	}
 
 	s := "test file"
@@ -26,3 +26,4 @@ func TestCheckVirusTotalEmptyHash(t *testing.T) {
 		t.Fatalf(`checkVirusTotal with empty hash = %v, want %v`, err, e)
 	}
 }
+
