@@ -3,5 +3,6 @@
     "UploadLimitMB" : 512,
     "UseVirusTotal" : true,
     "UploadVirusTotal" : true,
-    "VirusTotalApiKey" : "lol"
+    "VirusTotalApiKey" : "lol",
+    "ScanOutputDir" : "scans/"
 }

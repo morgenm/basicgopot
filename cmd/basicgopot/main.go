@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// Load config
-	cfg, err := config.ReadConfig()
+	cfg, err := config.ReadConfig("config.json")
 	if errors.CheckErr(err, "Error reading config.json!") {
 		return
 	}

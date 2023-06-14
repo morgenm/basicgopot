@@ -45,7 +45,7 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 					alreadyOnVT = false
 				} else {
 					body, err := io.ReadAll(resp.Body)
-					if !errors.CheckErr(err, "Error on reading body!") { // Successfully read body
+					if !errors.CheckErr(err, "Error on reading body!") && cfg.ScanOutputDir != ""{ // Successfully read body
 						// Write JSON to file
 						scanFilepath := filepath.Clean(filepath.Join("scans/", time.Now().Format(time.UnixDate)+" "+outFileName+".json"))
 						outFile, err := os.Create(scanFilepath)
@@ -54,8 +54,10 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 							if errors.CheckErr(err, "Error writing scan to file!") {
 								return err
 							}
-						}
-						if errors.CheckErr(outFile.Close(), "Error closing new scan file!") {
+							if errors.CheckErr(outFile.Close(), "Error closing new scan file!") {
+								return err
+							}
+						} else {
 							return err
 						}
 
@@ -108,7 +110,7 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 						//return &errors.VirusTotalAPIKeyError{}
 					} else {
 						body, err := io.ReadAll(resp.Body)
-						if !errors.CheckErr(err, "Error on reading body!") { // Successfully read body
+						if !errors.CheckErr(err, "Error on reading body!") && cfg.ScanOutputDir != "" { // Successfully read body
 							// Get analysis URL from response
 							var decoded map[string]interface{}
 							if errors.CheckErr(json.Unmarshal([]byte(body), &decoded), "Error unmarshalling JSON analysis from VirusTotal!") {
@@ -230,7 +232,7 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		err := checkVirusTotal(h.cfg, hash, fileSize, uploadFilename, data)
 		if err != nil {
-			log.Print(err)
+			log.Print()
 		}
 	}()
 }
