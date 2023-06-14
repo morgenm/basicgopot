@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"github.com/morgenm/basicgopot/internal/errors"
 )
 
@@ -18,7 +19,7 @@ type Config struct {
 }
 
 func ReadConfig(filename string) (*Config, error) {
-	f, err := os.Open(filename)
+	f, err := os.Open(filepath.Clean(filename))
 	if errors.CheckErr(err, "Error opening config file!") {
 		return nil, err
 	}
