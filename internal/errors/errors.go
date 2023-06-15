@@ -14,12 +14,14 @@ func CheckErr(err error, outString string) bool {
 	}
 }
 
-type VirusTotalAPIKeyError struct{}
-type VirusTotalAnalysisNotFound struct{}
-type InvalidHashError struct{}
-type FileTooBig struct{}
-type UploadAlreadyInLog struct{}
-type UploadNotInLog struct{}
+type (
+	VirusTotalAPIKeyError      struct{}
+	VirusTotalAnalysisNotFound struct{}
+	InvalidHashError           struct{}
+	FileTooBig                 struct{}
+	UploadAlreadyInLog         struct{}
+	UploadNotInLog             struct{}
+)
 
 func (e *VirusTotalAPIKeyError) Error() string {
 	return "VirusTotal authentication failure!"

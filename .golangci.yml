@@ -1,6 +1,7 @@
 linters:
   enable:
     - gocyclo
+    - gofumpt
 
 linter-settings:
   go-cyclo:

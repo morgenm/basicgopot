@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
-
-	"net/http"
-
 	"time"
 
 	"github.com/morgenm/basicgopot/internal/config"
