@@ -8,16 +8,16 @@
 
 ![Basicgopot](https://raw.githubusercontent.com/morgenm/basicgopot/275d8f8fedc251dedce6a047a0cd8b023a94f2f8/docs/basicgopot.gif)
 
-This honeypot is an HTTP server which will allow the user to upload any type of file. The files are written to the uploads directory and then are, by default, passed to VirusTotal to see if they are malicious. The VirusTotal results are written to the scans directory. The server is configurable, see [Configuration](#configuration).
+This honeypot is an HTTP server which will allow the user to upload any type of file. Uploaded files will be saved and scanned by VirusTotal per the default configuration. To learn how to configure the server, see [Configuration](#configuration).
 
-It serves HTML files that are put in the `static` directory. I included a very rudimentary template, which `static` is a symbolic link to. To run this code, rename `docs/config.json.example` to `config.json` (make sure it's in the top-level directory!) and fill in the configuration variables as you see fit.
+It serves HTML files that are put in the `web/static` directory. I included some rudimentary templates for the web server in `web/templates`. By default, `web/static` is a symbolic link to the `web/firmware_upload_v2` template. To run this code, rename `docs/config.json.example` to `config.json` (make sure it's in the top-level directory!) and fill in the configuration variables as you see fit.
 
-If you wish to use VirusTotal, you will need to put your API key in the config. Any files uploaded to the server will be in the `uploads` directory, and VirusTotal results will be in the `scans` directory.
+If you wish to use VirusTotal, you will need to put your API key in the config. The program will create the `uploads` and `scans` directories. Any files uploaded to the server will be in the `uploads` directory, and VirusTotal results will be in the `scans` directory.
 
-As of right now, if the file already has been uploaded to VirusTotal, the honeypot will download the entire file data that is provided by VirusTotal. But, if it is unique, it will upload the file and just grab the analysis results (after waiting a short time). For the latter scenario, I would recommend opening up the analysis in a browser by grabbing the hash from the analysis scan result and putting it into VirusTotal manually.
+If the file already has been uploaded to VirusTotal, the honeypot will download the file data (scan results and other info) that is provided by VirusTotal. But, if it is unique, it will upload the file and just grab the analysis results. For the latter scenario, I would recommend opening up the analysis in a browser by grabbing the hash from the analysis scan result and putting it into VirusTotal manually.
 
 ## Configuration
-The configuration for *basicgopot* is stored in `config.json`. An example config file is provided in `config.json.example`. The configuration options are:
+The configuration for **_basicgopot_** is stored in `config.json`. An example config file is provided in `docs/config.json.example`. The configuration options are:
 ```json
 {
     "ServerPort" : 8080, // The port the server runs on
@@ -29,7 +29,7 @@ The configuration for *basicgopot* is stored in `config.json`. An example config
 }
 ```
 
-If `UploadVirusTotal` is false, but `UseVirusTotal` is true, the uploaded samples' hashes will be checked against VirusTotal, but they will not be uploaded. If `UseVirusTotal` is false and `UploadVirusTotal` is true, `UploadVirusTotal` will be ignored, and the samples will just be saved to disk.
+If `UploadVirusTotal` is false, but `UseVirusTotal` is true, the uploaded samples' hashes will be checked against VirusTotal, but they will not be uploaded. If `UseVirusTotal` is false and `UploadVirusTotal` is true, `UploadVirusTotal` will be ignored, and the samples will just be saved to disk. If `ScanOutputDir` is set to equal `""` (empty string), VirusTotal scan data will not be saved.
 
 ## Building/Running
 To run the honeypot, you can simply execute: `go run ./cmd/basicgopot`. 

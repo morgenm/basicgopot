@@ -281,7 +281,7 @@ func RunServer(cfg *config.Config) {
 	fileUploadHandler := FileUploadHandler{cfg}
 
 	// Create FileServer Handler to add route to mux
-	fileServer := http.FileServer(http.Dir("./static"))
+	fileServer := http.FileServer(http.Dir("web/static"))
 
 	// Create mux for server
 	mux := http.NewServeMux()
