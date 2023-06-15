@@ -1,10 +1,12 @@
 // Code for handling JSON config file
-package main
+package config
 
 import (
 	"bufio"
 	"encoding/json"
+	"github.com/morgenm/basicgopot/internal/errors"
 	"os"
+	"path/filepath"
 )
 
 type Config struct {
@@ -13,11 +15,12 @@ type Config struct {
 	UseVirusTotal    bool  // Whether or not to use VT
 	UploadVirusTotal bool  // Whether to upload to VT
 	VirusTotalApiKey string
+	ScanOutputDir    string // Directory to output VT scans, leave empty if no output scans are wanted
 }
 
-func readConfig() (*Config, error) {
-	f, err := os.Open("config.json")
-	if checkErr(err, "Error opening config file!") {
+func ReadConfig(filename string) (*Config, error) {
+	f, err := os.Open(filepath.Clean(filename))
+	if errors.CheckErr(err, "Error opening config file!") {
 		return nil, err
 	}
 	defer f.Close()
@@ -31,7 +34,7 @@ func readConfig() (*Config, error) {
 		data = append(data, line...)
 		data = append(data, '\n')
 	}
-	if checkErr(scanner.Err(), "Error reading config file!") {
+	if errors.CheckErr(scanner.Err(), "Error reading config file!") {
 		return nil, err
 	}
 

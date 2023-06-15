@@ -7,7 +7,7 @@
 *.dll
 *.so
 *.dylib
-basicgopot
+*.o
 
 # Test binary, built with `go test -c`
 *.test
@@ -22,10 +22,10 @@ basicgopot
 go.work
 
 # Upload directory 
-uploads
+uploads/
 
 # Config
 config.json
 
 # Scan results
-scans
+scans/
