@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -126,6 +127,41 @@ func (uploadLog *UploadLog) SaveFileLoop() error {
 		}
 
 		time.Sleep(time.Duration(uploadLog.saveInterval) * time.Second)
+	}
+
+	return nil
+}
+
+// Load uploadlog from file
+func (uploadLog *UploadLog) LoadFromFile() error {
+	if uploadLog.logPath == "" { // No log file
+		return nil
+	}
+
+	f, err := os.Open(filepath.Clean(uploadLog.logPath))
+	if os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// Read the uploadLog file
+	scanner := bufio.NewScanner(f)
+	var data []byte
+
+	for scanner.Scan() { // Reading line-by-line
+		line := scanner.Bytes()
+		data = append(data, line...)
+		data = append(data, '\n')
+	}
+	if err = scanner.Err(); err != nil {
+		return err
+	}
+
+	// Create the upload map from the file
+	if err = json.Unmarshal(data, &uploadLog.uploads); err != nil {
+		return err
 	}
 
 	return nil

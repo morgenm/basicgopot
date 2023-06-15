@@ -95,6 +95,9 @@ func RunServer(cfg *config.Config) {
 		logPath:      cfg.UploadLog,
 		saveInterval: 10,
 	}
+	if err := uploadLog.LoadFromFile(); err != nil {
+		panic(err)
+	}
 
 	go func() {
 		err := uploadLog.SaveFileLoop()

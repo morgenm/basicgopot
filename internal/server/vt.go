@@ -201,6 +201,7 @@ func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, uploadFilepath st
 		if err = uploadLog.UpdateFileScan(uploadFilepath, scanFilepath, "Scan"); err != nil {
 			return err
 		}
+		return nil
 	}
 
 	// Upload to VirusTotal, if configured to
