@@ -70,6 +70,20 @@ func (uploadLog *UploadLog) UpdateFile(uploadPath string, originalFilename strin
 	return nil
 }
 
+// Update the scan path and type of an already existing entry
+func (uploadLog *UploadLog) UpdateFileScan(uploadPath string, newScanPath string, newScanType string) error {
+	uploadLog.mutx.Lock()
+	defer uploadLog.mutx.Unlock()
+
+	if _, ok := uploadLog.uploads[uploadPath]; !ok {
+		return &errors.UploadNotInLog{}
+	}
+
+	uploadLog.uploads[uploadPath].(map[string]interface{})["Scan File"] = newScanPath
+	uploadLog.uploads[uploadPath].(map[string]interface{})["Scan Type"] = newScanType
+	return nil
+}
+
 // Save to file
 func (uploadLog *UploadLog) SaveFile() error {
 	uploadLog.mutx.Lock()

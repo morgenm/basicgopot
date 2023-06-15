@@ -83,6 +83,39 @@ func TestUpdateFileTest(t *testing.T) {
 	}
 }
 
+// Test updating scan path and type
+func TestUpdateFileScan(t *testing.T) {
+	u := &UploadLog{
+		logPath: "",
+	}
+
+	if err := u.AddFile("uploads/test.txt", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
+		t.Fatalf(`testUpdateFileScan adding new file = %v, want nil`, err)
+	}
+
+	if err := u.UpdateFileScan("uploads/test.txt", "scans/scan2.json", "Report"); err != nil {
+		t.Fatalf(`testUpdateFileScan updating existing file = %v, want nil`, err)
+	}
+
+	// This is what the upload vals should look like since we are passing empty data
+	uploadVals := map[string]interface{}{
+		"Time Uploaded":     "Now",
+		"Original Filename": "original.txt",
+		"Scan File":         "scans/scan2.json",
+		"File Hash":         "321",
+		"Scan Type":         "Report", // Results for file already in VT, Analysis for queued/new upload
+	}
+
+	// Actual values
+	var retVals map[string]interface{} = u.uploads["uploads/test.txt"].(map[string]interface{})
+
+	for key, val := range uploadVals {
+		if retVals[key] != val {
+			t.Fatalf(`testUpdateFileScan failed, uploads[%v] = %v, want %v`, key, uploadVals[key], val)
+		}
+	}
+}
+
 // Test saving to file
 func TestSaveFileTest(t *testing.T) {
 	u := &UploadLog{

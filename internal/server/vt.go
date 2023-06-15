@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,7 +16,7 @@ import (
 	"github.com/morgenm/basicgopot/internal/errors"
 )
 
-func checkHashVirusTotal(apiKey string, hash string, scanOutputDir string, outFileName string) (bool, error) {
+func checkHashVirusTotal(apiKey string, hash string, scanOutputDir string, outFileName string, scanFilepath string) (bool, error) {
 	// Make get request
 	client := &http.Client{}
 	requestUrl := fmt.Sprintf("https://www.virustotal.com/api/v3/files/%s", hash)
@@ -49,7 +48,6 @@ func checkHashVirusTotal(apiKey string, hash string, scanOutputDir string, outFi
 	}
 
 	// Write JSON to file
-	scanFilepath := filepath.Clean(filepath.Join(scanOutputDir, time.Now().Format(time.UnixDate)+" "+outFileName+".json"))
 	outFile, err := os.Create(scanFilepath)
 	if err != nil {
 		log.Print("Failed creating the file: ", scanFilepath)
@@ -171,7 +169,7 @@ func uploadFileVirusTotal(apiKey string, hash string, fileSize float64, scanOutp
 
 	// Write JSON to file
 	scanFilename := time.Now().Format(time.UnixDate) + " " + outFileName + ".json"
-	scanFilepath := filepath.Clean(filepath.Join("scans/", scanFilename))
+	scanFilepath := filepath.Clean(filepath.Join(scanOutputDir, scanFilename))
 	outFile, err := os.Create(scanFilepath)
 	if err != nil { // Failed to create file
 		return err
@@ -187,7 +185,7 @@ func uploadFileVirusTotal(apiKey string, hash string, fileSize float64, scanOutp
 	return nil
 }
 
-func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileName string, data []byte) error {
+func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, uploadFilepath string, hash string, fileSize float64, outFileName string, data []byte) error {
 	// Check if valid hash
 	if len(hash) != 64 {
 		return &errors.InvalidHashError{}
@@ -195,89 +193,27 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 
 	// Check if on VirusTotal
 	log.Print("Checking hash against VirusTotal...")
-	alreadyOnVT, err := checkHashVirusTotal(cfg.VirusTotalApiKey, hash, cfg.ScanOutputDir, outFileName)
+	scanFilepath := filepath.Clean(filepath.Join(cfg.ScanOutputDir, time.Now().Format(time.UnixDate)+" "+outFileName+".json"))
+	alreadyOnVT, err := checkHashVirusTotal(cfg.VirusTotalApiKey, hash, cfg.ScanOutputDir, outFileName, scanFilepath)
 	if err != nil {
 		return err
+	} else if alreadyOnVT {
+		if err = uploadLog.UpdateFileScan(uploadFilepath, scanFilepath, "Scan"); err != nil {
+			return err
+		}
 	}
 
 	// Upload to VirusTotal, if configured to
-	if !cfg.UploadVirusTotal || alreadyOnVT {
+	if !cfg.UploadVirusTotal {
 		return nil
 	}
 	err = uploadFileVirusTotal(cfg.VirusTotalApiKey, hash, fileSize, cfg.ScanOutputDir, outFileName, data)
-
-	return err
-}
-
-type FileUploadHandler struct {
-	cfg       *config.Config
-	uploadLog *UploadLog
-}
-
-func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Set file size limit for the upload
-	if errors.CheckErr(r.ParseMultipartForm(h.cfg.UploadLimitMB<<20), "Error parsing upload form!") {
-		return
-	}
-
-	// Get file
-	file, handler, err := r.FormFile("fileupload")
 	if err != nil {
-		log.Print("File upload from user failed! ", err)
-		fmt.Fprintf(w, "File upload failed!")
-		return
+		return err
 	}
-	defer file.Close()
-	log.Print("File being uploaded by user...")
-
-	// Create file for writing. TODO: Make writing optional in config
-	timeUploaded := time.Now().Format(time.UnixDate)
-	uploadFilepath := filepath.Clean(filepath.Join("uploads/", timeUploaded))
-	outFile, err := os.Create(uploadFilepath)
-	errors.CheckErr(err, "Failed to create file!")
-
-	// Read uploaded file to byte array
-	data, err := io.ReadAll(file)
-	if errors.CheckErr(err, "Failed to read uploaded file!") {
-		return
+	if err = uploadLog.UpdateFileScan(uploadFilepath, scanFilepath, "Analysis"); err != nil {
+		return err
 	}
 
-	// Write to file
-	_, err = outFile.Write(data)
-	if errors.CheckErr(err, "Error writing the uploaded file!") {
-		return
-	}
-	if errors.CheckErr(outFile.Close(), "Error closing the new uploaded file!") {
-		return
-	}
-
-	// Inform user of success
-	fmt.Fprintf(w, "File uploaded!")
-	log.Print("File uploaded by user.")
-
-	// Get file hash
-	hasher := sha256.New()
-	_, err = hasher.Write(data)
-	if errors.CheckErr(err, "Error getting file hash!") {
-		return
-	}
-	hash := fmt.Sprintf("%x", hasher.Sum(nil))
-	log.Print("File hash: ", hash)
-
-	// Get file size
-	fileSize := float64(handler.Size) / (1024 * 1024) // Size in MB
-
-	if h.cfg.UseVirusTotal {
-		go func() {
-			err := checkVirusTotal(h.cfg, hash, fileSize, handler.Filename, data)
-			if err != nil {
-				log.Print(err)
-			}
-		}()
-	}
-
-	// Add basic info about the uploaded file to the log
-	if err = h.uploadLog.AddFile(uploadFilepath, handler.Filename, timeUploaded, "", hash, "Not uploaded"); err != nil {
-		panic(err)
-	}
+	return nil
 }

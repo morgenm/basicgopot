@@ -23,11 +23,13 @@ func TestCheckVirusTotalKnownHash(t *testing.T) {
 
 	cfg.ScanOutputDir = "" // Don't output scans
 
+	uploadLog := UploadLog{}
+
 	// Define simple file already present on VT
 	sArr := []byte("test file")
 	hash := "55f8718109829bf506b09d8af615b9f107a266e19f7a311039d1035f180b22d4"
 
-	err = checkVirusTotal(cfg, hash, 0.01, "out.test", sArr)
+	err = checkVirusTotal(cfg, &uploadLog, "test", hash, 0.01, "out.test", sArr)
 	if err != nil {
 		t.Fatalf(`checkVirusTotal with known hash = %v, want nil`, err)
 	}
@@ -60,7 +62,9 @@ func TestCheckVirusTotalRandomFile(t *testing.T) {
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
-	err = checkVirusTotal(cfg, hash, fileSize/(1024*1024), "out.test", data)
+	uploadLog := UploadLog{}
+
+	err = checkVirusTotal(cfg, &uploadLog, "test", hash, fileSize/(1024*1024), "out.test", data)
 	if err != nil {
 		t.Fatalf(`checkVirusTotal with random file = %v, want nil`, err)
 	}
@@ -93,7 +97,9 @@ func TestCheckVirusTotalRandomFileTooBig(t *testing.T) {
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
-	err = checkVirusTotal(cfg, hash, fileSize/(1024*1024), "out.test", data)
+	uploadLog := UploadLog{}
+
+	err = checkVirusTotal(cfg, &uploadLog, "test", hash, fileSize/(1024*1024), "out.test", data)
 	expected := &errors.FileTooBig{}
 	if !goerrors.As(err, &expected) {
 		t.Fatalf(`checkVirusTotal with random file = %v, want %v`, err, &errors.FileTooBig{})
