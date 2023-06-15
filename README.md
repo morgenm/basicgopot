@@ -6,8 +6,6 @@
 
 **_A basic honeypot written in Go._**
 
-![Basicgopot](docs/basgicgopot.gif)
-
 This honeypot is an HTTP server which will allow the user to upload any type of file. The files are written to the uploads directory and then are, by default, passed to VirusTotal to see if they are malicious. The VirusTotal results are written to the scans directory. The server is configurable, see [Configuration](#configuration).
 
 It serves HTML files that are put in the `static` directory. I included a very rudimentary template, which `static` is a symbolic link to. To run this code, rename `docs/config.json.example` to `config.json` (make sure it's in the top-level directory!) and fill in the configuration variables as you see fit.
