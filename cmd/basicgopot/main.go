@@ -9,9 +9,6 @@ import (
 )
 
 func main() {
-	// TODO: config set log file.
-	// TODO: config set alert with email?
-
 	// Create upload directory
 	if _, err := os.Stat("uploads/"); os.IsNotExist(err) {
 		if errors.CheckErr(os.Mkdir("uploads/", 0o750), "Fatal error: Could not create uploads directory and it does not already exist!") {

@@ -35,7 +35,7 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 	log.Print("File being uploaded by user...")
 
-	// Create file for writing. TODO: Make writing optional in config
+	// Create file for writing.
 	timeUploaded := time.Now().Format(time.UnixDate)
 	uploadFilepath := filepath.Clean(filepath.Join("uploads/", timeUploaded))
 	outFile, err := os.Create(uploadFilepath)
