@@ -4,9 +4,9 @@ package config
 import (
 	"bufio"
 	"encoding/json"
+	"github.com/morgenm/basicgopot/internal/errors"
 	"os"
 	"path/filepath"
-	"github.com/morgenm/basicgopot/internal/errors"
 )
 
 type Config struct {
@@ -15,7 +15,7 @@ type Config struct {
 	UseVirusTotal    bool  // Whether or not to use VT
 	UploadVirusTotal bool  // Whether to upload to VT
 	VirusTotalApiKey string
-	ScanOutputDir	 string // Directory to output VT scans, leave empty if no output scans are wanted
+	ScanOutputDir    string // Directory to output VT scans, leave empty if no output scans are wanted
 }
 
 func ReadConfig(filename string) (*Config, error) {

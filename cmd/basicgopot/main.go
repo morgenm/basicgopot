@@ -1,10 +1,10 @@
 package main
 
 import (
-	"os"
-	"github.com/morgenm/basicgopot/internal/server"
 	"github.com/morgenm/basicgopot/internal/config"
 	"github.com/morgenm/basicgopot/internal/errors"
+	"github.com/morgenm/basicgopot/internal/server"
+	"os"
 )
 
 func main() {
