@@ -12,8 +12,9 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-	"github.com/morgenm/basicgopot/internal/errors"
+
 	"github.com/morgenm/basicgopot/internal/config"
+	"github.com/morgenm/basicgopot/internal/errors"
 )
 
 func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileName string, data []byte) error {
@@ -21,7 +22,7 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 	if len(hash) != 64 {
 		return &errors.InvalidHashError{}
 	}
-	
+
 	alreadyOnVT := true
 
 	// Check if on VirusTotal
@@ -45,7 +46,7 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 					alreadyOnVT = false
 				} else {
 					body, err := io.ReadAll(resp.Body)
-					if !errors.CheckErr(err, "Error on reading body!") && cfg.ScanOutputDir != ""{ // Successfully read body
+					if !errors.CheckErr(err, "Error on reading body!") && cfg.ScanOutputDir != "" { // Successfully read body
 						// Write JSON to file
 						scanFilepath := filepath.Clean(filepath.Join("scans/", time.Now().Format(time.UnixDate)+" "+outFileName+".json"))
 						outFile, err := os.Create(scanFilepath)
@@ -165,6 +166,8 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 					}
 				}
 			}
+		} else {
+			return &errors.FileTooBig{}
 		}
 	}
 

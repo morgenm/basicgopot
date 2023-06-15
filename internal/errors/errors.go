@@ -16,6 +16,7 @@ func CheckErr(err error, outString string) bool {
 
 type VirusTotalAPIKeyError struct {}
 type InvalidHashError struct {}
+type FileTooBig struct {}
 
 func (e *VirusTotalAPIKeyError) Error() string {
 	return "VirusTotal authentication failure!"
@@ -23,4 +24,8 @@ func (e *VirusTotalAPIKeyError) Error() string {
 
 func (e *InvalidHashError) Error() string {
 	return "Invalid hash!"
+}
+
+func (e *FileTooBig) Error() string {
+	return "File is too large to upload to VirusTotal!"
 }
