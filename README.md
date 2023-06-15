@@ -24,7 +24,8 @@ The configuration for *basicgopot* is stored in `config.json`. An example config
     "UploadLimitMB" : 512, // Size limit in Megabytes for a single file upload to the server
     "UseVirusTotal" : true, // Whether to use VirusTotal 
     "UploadVirusTotal" : true, // Whether to upload the sample to VirusTotal if its unique
-    "VirusTotalApiKey" : "lol" // VirusTotal user API key (needed if UseVirusTotal is true)
+    "VirusTotalApiKey" : "lol", // VirusTotal user API key (needed if UseVirusTotal is true)
+    "ScanOutputDir" : "scans/" // Directory to store downloaded VirusTotal scans in  
 }
 ```
 
