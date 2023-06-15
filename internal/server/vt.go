@@ -48,7 +48,7 @@ func checkHashVirusTotal(apiKey string, hash string, scanOutputDir string, outFi
 	}
 
 	// Write JSON to file
-	outFile, err := os.Create(scanFilepath)
+	outFile, err := os.Create(filepath.Clean(scanFilepath))
 	if err != nil {
 		log.Print("Failed creating the file: ", scanFilepath)
 		return true, err
