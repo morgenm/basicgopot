@@ -4,5 +4,6 @@
     "UseVirusTotal" : true,
     "UploadVirusTotal" : true,
     "VirusTotalApiKey" : "lol",
-    "ScanOutputDir" : "scans/"
+    "ScanOutputDir" : "scans/",
+    "UploadLog" : "uploads.json"
 }

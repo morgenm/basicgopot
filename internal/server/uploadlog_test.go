@@ -12,16 +12,17 @@ func TestAddFileTest(t *testing.T) {
 		logPath: "",
 	}
 
-	if err := u.AddFile("uploads/test.txt", "Whenever", "scans/scan.json", "123", "Results"); err != nil {
+	if err := u.AddFile("uploads/test.txt", "original.txt", "Whenever", "scans/scan.json", "123", "Results"); err != nil {
 		t.Fatalf(`testAddFileTest = %v, want nil`, err)
 	}
 
 	// This is what the upload vals should look like since we are passing empty data
 	uploadVals := map[string]interface{}{
-		"Time Uploaded": "Whenever",
-		"Scan File":     "scans/scan.json",
-		"File Hash":     "123",
-		"Scan Type":     "Results", // Results for file already in VT, Analysis for queued/new upload
+		"Time Uploaded":     "Whenever",
+		"Original Filename": "original.txt",
+		"Scan File":         "scans/scan.json",
+		"File Hash":         "123",
+		"Scan Type":         "Results", // Results for file already in VT, Analysis for queued/new upload
 	}
 
 	// Actual values
@@ -40,11 +41,11 @@ func TestAddRepeatFile(t *testing.T) {
 		logPath: "",
 	}
 
-	if err := u.AddFile("uploads/test.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
+	if err := u.AddFile("uploads/test.txt", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
 		t.Fatalf(`testUpdateFileTest repeat add file failed on first file = %v, want nil`, err)
 	}
 
-	if err := u.AddFile("uploads/test.txt", "Whenever", "scans/scan.json", "123", "Results"); err == nil {
+	if err := u.AddFile("uploads/test.txt", "new.txt", "Whenever", "scans/scan.json", "123", "Results"); err == nil {
 		t.Fatalf(`testAddFileTest repeat add existing file = nil, want %v`, &errors.UploadAlreadyInLog{})
 	}
 }
@@ -55,20 +56,21 @@ func TestUpdateFileTest(t *testing.T) {
 		logPath: "",
 	}
 
-	if err := u.AddFile("uploads/test.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
+	if err := u.AddFile("uploads/test.txt", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
 		t.Fatalf(`testUpdateFileTest adding new file = %v, want nil`, err)
 	}
 
-	if err := u.UpdateFile("uploads/test.txt", "Whenever", "scans/scan.json", "123", "Results"); err != nil {
+	if err := u.UpdateFile("uploads/test.txt", "new.txt", "Whenever", "scans/scan.json", "123", "Results"); err != nil {
 		t.Fatalf(`testUpdateFileTest updating existing file = %v, want nil`, err)
 	}
 
 	// This is what the upload vals should look like since we are passing empty data
 	uploadVals := map[string]interface{}{
-		"Time Uploaded": "Whenever",
-		"Scan File":     "scans/scan.json",
-		"File Hash":     "123",
-		"Scan Type":     "Results", // Results for file already in VT, Analysis for queued/new upload
+		"Time Uploaded":     "Whenever",
+		"Original Filename": "new.txt",
+		"Scan File":         "scans/scan.json",
+		"File Hash":         "123",
+		"Scan Type":         "Results", // Results for file already in VT, Analysis for queued/new upload
 	}
 
 	// Actual values
@@ -76,7 +78,7 @@ func TestUpdateFileTest(t *testing.T) {
 
 	for key, val := range uploadVals {
 		if retVals[key] != val {
-			t.Fatalf(`testAddFile empty failed, uploads[%v] = %v, want %v`, key, u.uploads[key], val)
+			t.Fatalf(`testAddFile empty failed, uploads[%v] = %v, want %v`, key, uploadVals[key], val)
 		}
 	}
 }
@@ -87,8 +89,8 @@ func TestSaveFileTest(t *testing.T) {
 		logPath: "",
 	}
 
-	if err := u.AddFile("uploads/test.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
-		t.Fatalf(`testUpdateFileTest repeat add file failed on first file = %v, want nil`, err)
+	if err := u.AddFile("uploads/test.txt", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
+		t.Fatalf(`testSaveFileTest add file failed = %v, want nil`, err)
 	}
 
 	if err := u.SaveFile(); err != nil {

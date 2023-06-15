@@ -5,18 +5,21 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/morgenm/basicgopot/internal/errors"
 )
 
 type UploadLog struct {
-	logPath string // Where to save the log
-	mutx    sync.Mutex
-	uploads map[string]interface{}
+	logPath        string // Where to save the log
+	mutx           sync.Mutex
+	uploads        map[string]interface{}
+	quitSavingLoop bool
+	saveInterval   int // Save every so many seconds
 }
 
 // Add file to UploadLog. Returns err if already in log.
-func (uploadLog *UploadLog) AddFile(uploadPath string, timeUpload string, scanPath string, hash string, scanType string) error {
+func (uploadLog *UploadLog) AddFile(uploadPath string, originalFilename string, timeUpload string, scanPath string, hash string, scanType string) error {
 	uploadLog.mutx.Lock()
 	defer uploadLog.mutx.Unlock()
 
@@ -26,10 +29,11 @@ func (uploadLog *UploadLog) AddFile(uploadPath string, timeUpload string, scanPa
 
 	// Create map of values for this upload
 	uploadVals := map[string]interface{}{
-		"Time Uploaded": timeUpload,
-		"Scan File":     scanPath,
-		"File Hash":     hash,
-		"Scan Type":     scanType, // Results for file already in VT, Analysis for queued/new upload
+		"Original Filename": originalFilename,
+		"Time Uploaded":     timeUpload,
+		"Scan File":         scanPath,
+		"File Hash":         hash,
+		"Scan Type":         scanType, // Results for file already in VT, Analysis for queued/new upload, or Not Uploaded if not yet uploaded or not going to upload
 	}
 
 	// Add to uploadLog
@@ -42,7 +46,7 @@ func (uploadLog *UploadLog) AddFile(uploadPath string, timeUpload string, scanPa
 }
 
 // Update existing log entry. Returns err if not already in log.
-func (uploadLog *UploadLog) UpdateFile(uploadPath string, timeUpload string, scanPath string, hash string, scanType string) error {
+func (uploadLog *UploadLog) UpdateFile(uploadPath string, originalFilename string, timeUpload string, scanPath string, hash string, scanType string) error {
 	uploadLog.mutx.Lock()
 	defer uploadLog.mutx.Unlock()
 
@@ -52,10 +56,11 @@ func (uploadLog *UploadLog) UpdateFile(uploadPath string, timeUpload string, sca
 
 	// Create map of values for this upload
 	uploadVals := map[string]interface{}{
-		"Time Uploaded": timeUpload,
-		"Scan File":     scanPath,
-		"File Hash":     hash,
-		"Scan Type":     scanType, // Results for file already in VT, Analysis for queued/new upload
+		"Original Filename": originalFilename,
+		"Time Uploaded":     timeUpload,
+		"Scan File":         scanPath,
+		"File Hash":         hash,
+		"Scan Type":         scanType, // Results for file already in VT, Analysis for queued/new upload
 	}
 
 	// Add to uploadLog
@@ -82,7 +87,7 @@ func (uploadLog *UploadLog) SaveFile() error {
 	}
 
 	// Open uploadLog file for writing the JSON data
-	logPath := filepath.Clean(filepath.Join(uploadLog.logPath))
+	logPath := filepath.Clean(uploadLog.logPath)
 	outFile, err := os.Create(logPath)
 	if err != nil {
 		return err
@@ -94,6 +99,19 @@ func (uploadLog *UploadLog) SaveFile() error {
 	}
 	if err = outFile.Close(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// Loop and save file every so many seconds
+func (uploadLog *UploadLog) SaveFileLoop() error {
+	for !uploadLog.quitSavingLoop {
+		if err := uploadLog.SaveFile(); err != nil {
+			return err
+		}
+
+		time.Sleep(time.Duration(uploadLog.saveInterval) * time.Second)
 	}
 
 	return nil

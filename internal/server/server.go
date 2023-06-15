@@ -210,7 +210,8 @@ func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileN
 }
 
 type FileUploadHandler struct {
-	cfg *config.Config
+	cfg       *config.Config
+	uploadLog *UploadLog
 }
 
 func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -230,8 +231,8 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Print("File being uploaded by user...")
 
 	// Create file for writing. TODO: Make writing optional in config
-	uploadFilename := time.Now().Format(time.UnixDate)
-	uploadFilepath := filepath.Clean(filepath.Join("uploads/", uploadFilename))
+	timeUploaded := time.Now().Format(time.UnixDate)
+	uploadFilepath := filepath.Clean(filepath.Join("uploads/", timeUploaded))
 	outFile, err := os.Create(uploadFilepath)
 	errors.CheckErr(err, "Failed to create file!")
 
@@ -268,17 +269,35 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if h.cfg.UseVirusTotal {
 		go func() {
-			err := checkVirusTotal(h.cfg, hash, fileSize, uploadFilename, data)
+			err := checkVirusTotal(h.cfg, hash, fileSize, handler.Filename, data)
 			if err != nil {
 				log.Print(err)
 			}
 		}()
 	}
+
+	// Add basic info about the uploaded file to the log
+	if err = h.uploadLog.AddFile(uploadFilepath, handler.Filename, timeUploaded, "", hash, "Not uploaded"); err != nil {
+		panic(err)
+	}
 }
 
 func RunServer(cfg *config.Config) {
+	// Create upload log
+	uploadLog := UploadLog{
+		logPath:      cfg.UploadLog,
+		saveInterval: 10,
+	}
+
+	go func() {
+		err := uploadLog.SaveFileLoop()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	// Create FileUploadHandler to add route to mux
-	fileUploadHandler := FileUploadHandler{cfg}
+	fileUploadHandler := FileUploadHandler{cfg, &uploadLog}
 
 	// Create FileServer Handler to add route to mux
 	fileServer := http.FileServer(http.Dir("web/static"))
@@ -300,4 +319,7 @@ func RunServer(cfg *config.Config) {
 	// Listen
 	log.Print("Server listening on port ", portStr)
 	errors.CheckErr(server.ListenAndServe(), "Error while listening and serving!")
+
+	// Clean up
+	uploadLog.quitSavingLoop = true
 }
