@@ -1,11 +1,16 @@
 package server
 
 import (
+	"crypto/sha256"
+	"fmt"
+	"math/rand"
 	"testing"
+	"time"
+
 	"github.com/morgenm/basicgopot/internal/config"
 )
 
-// Test checkVirusTotal using a filehash already on VT	
+// Test checkVirusTotal using a filehash already on VT
 func TestCheckVirusTotalKnownHash(t *testing.T) {
 	// Quite ugly, but using config.json from top level dir so we
 	// have access to the legitimate API key
@@ -13,7 +18,8 @@ func TestCheckVirusTotalKnownHash(t *testing.T) {
 	if err != nil {
 		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
 	}
-	cfg.ScanOutputDir = ""
+
+	cfg.ScanOutputDir = "" // Don't output scans
 
 	// Define simple file already present on VT
 	sArr := []byte("test file")
@@ -25,3 +31,35 @@ func TestCheckVirusTotalKnownHash(t *testing.T) {
 	}
 }
 
+// Test checkVirusTotal with a randomly generated file, not on VT
+func TestCheckVirusTotalRandomFile(t *testing.T) {
+	// Quite ugly, but using config.json from top level dir so we
+	// have access to the legitimate API key
+	cfg, err := config.ReadConfig("../../config.json")
+	if err != nil {
+		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+	}
+
+	cfg.ScanOutputDir = "" // Don't output scans
+
+	// Generate random bytes to act as our file
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	const fileSize = 1024 * 512 // Will generate half a MB of random data
+	data := make([]byte, fileSize)
+	for i := 0; i < fileSize; i++ {
+		data[i] = byte(r.Intn(255 + 1))
+	}
+
+	// Get the hash to pass to VT
+	hasher := sha256.New()
+	_, err = hasher.Write(data)
+	if err != nil {
+		t.Fatalf(`checkVirusTotal test with random file failed when generating random file with error %v`, err)
+	}
+	hash := fmt.Sprintf("%x", hasher.Sum(nil))
+
+	err = checkVirusTotal(cfg, hash, fileSize/(1024*1024), "out.test", data)
+	if err != nil {
+		t.Fatalf(`checkVirusTotal with random file = %v, want nil`, err)
+	}
+}
