@@ -19,6 +19,7 @@ type VirusTotalAnalysisNotFound struct{}
 type InvalidHashError struct{}
 type FileTooBig struct{}
 type UploadAlreadyInLog struct{}
+type UploadNotInLog struct{}
 
 func (e *VirusTotalAPIKeyError) Error() string {
 	return "VirusTotal authentication failure!"
@@ -38,4 +39,8 @@ func (e *FileTooBig) Error() string {
 
 func (e *UploadAlreadyInLog) Error() string {
 	return "This filepath already exists in the log!"
+}
+
+func (e *UploadNotInLog) Error() string {
+	return "This filepath does not exist in the log!"
 }
