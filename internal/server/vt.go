@@ -169,7 +169,8 @@ func uploadFileVirusTotal(apiKey string, hash string, fileSize float64, scanOutp
 
 	// Write JSON to file
 	scanFilename := time.Now().Format(time.UnixDate) + " " + outFileName + ".json"
-	scanFilepath := filepath.Clean(filepath.Join(scanOutputDir, scanFilename))
+	scanFilepath := filepath.Join(scanOutputDir, filepath.Clean(scanFilename))
+	scanFilepath = filepath.Clean(scanFilepath)
 	outFile, err := os.Create(scanFilepath)
 	if err != nil { // Failed to create file
 		return err
@@ -193,7 +194,8 @@ func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, uploadFilepath st
 
 	// Check if on VirusTotal
 	log.Print("Checking hash against VirusTotal...")
-	scanFilepath := filepath.Clean(filepath.Join(cfg.ScanOutputDir, time.Now().Format(time.UnixDate)+" "+outFileName+".json"))
+	scanFilepath := filepath.Join(cfg.ScanOutputDir, filepath.Clean(time.Now().Format(time.UnixDate)+" "+outFileName+".json"))
+	scanFilepath = filepath.Clean(scanFilepath)
 	alreadyOnVT, err := checkHashVirusTotal(cfg.VirusTotalApiKey, hash, cfg.ScanOutputDir, outFileName, scanFilepath)
 	if err != nil {
 		return err
