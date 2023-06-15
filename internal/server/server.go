@@ -17,58 +17,65 @@ import (
 	"github.com/morgenm/basicgopot/internal/errors"
 )
 
+func checkHashVirusTotal(apiKey string, hash string, scanOutputDir string, outFileName string) (bool, error) {
+	// Make get request
+	client := &http.Client{}
+	requestUrl := fmt.Sprintf("https://www.virustotal.com/api/v3/files/%s", hash)
+	req, err := http.NewRequest("GET", requestUrl, nil)
+	if err != nil { //
+		return false, err
+	}
+
+	req.Header.Add("x-apikey", apiKey)
+	resp, err := client.Do(req)
+	if err != nil { // Failed GET Request
+		return false, err
+	}
+
+	// Check status codes to see if auth succeeded and if hash present on VT
+	if resp.StatusCode == 401 {
+		log.Print("Error: Auth with VirusTotal failed! Check that your API key in the config file is valid.")
+		return false, &errors.VirusTotalAPIKeyError{}
+	} else if resp.StatusCode == 404 { // Hash not present
+		return false, nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return false, err
+	}
+	if scanOutputDir == "" { // Successfully read the VirusTotal JSON data, but won't write the scan file
+		return true, nil
+	}
+
+	// Write JSON to file
+	scanFilepath := filepath.Clean(filepath.Join(scanOutputDir, time.Now().Format(time.UnixDate)+" "+outFileName+".json"))
+	outFile, err := os.Create(scanFilepath)
+	if err != nil {
+		log.Print("Failed creating the file: ", scanFilepath)
+		return false, err
+	}
+	_, err = outFile.Write(body)
+	if err != nil {
+		return false, err
+	}
+	outFile.Close()
+
+	log.Print("File already on VirusTotal, writing scan results.")
+	return true, nil
+}
+
 func checkVirusTotal(cfg *config.Config, hash string, fileSize float64, outFileName string, data []byte) error {
 	// Check if valid hash
 	if len(hash) != 64 {
 		return &errors.InvalidHashError{}
 	}
 
-	alreadyOnVT := true
-
 	// Check if on VirusTotal
-	if cfg.UseVirusTotal {
-		log.Print("Checking hash against VirusTotal...")
-
-		// Make get request
-		client := &http.Client{}
-		requestUrl := fmt.Sprintf("https://www.virustotal.com/api/v3/files/%s", hash)
-		req, err := http.NewRequest("GET", requestUrl, nil)
-
-		if !errors.CheckErr(err, "Error forming request") {
-			req.Header.Add("x-apikey", cfg.VirusTotalApiKey)
-			resp, err := client.Do(req)
-			if !errors.CheckErr(err, "Error on GET request for VT report from hash") { // If success on GET request
-				if resp.StatusCode == 401 {
-					log.Print("Error: VirusTotal authentication failed! Check your API key in config.json!")
-					return &errors.VirusTotalAPIKeyError{}
-				} else if resp.StatusCode == 404 {
-					log.Print("File not yet uploaded to VirusTotal.")
-					alreadyOnVT = false
-				} else {
-					body, err := io.ReadAll(resp.Body)
-					if !errors.CheckErr(err, "Error on reading body!") && cfg.ScanOutputDir != "" { // Successfully read body
-						// Write JSON to file
-						scanFilepath := filepath.Clean(filepath.Join("scans/", time.Now().Format(time.UnixDate)+" "+outFileName+".json"))
-						outFile, err := os.Create(scanFilepath)
-						if !errors.CheckErr(err, "Failed to create file!") { // Successfully opened file
-							_, err = outFile.Write(body)
-							if errors.CheckErr(err, "Error writing scan to file!") {
-								return err
-							}
-							if errors.CheckErr(outFile.Close(), "Error closing new scan file!") {
-								return err
-							}
-						} else {
-							return err
-						}
-
-						log.Print("File already on VirusTotal, writing scan results.")
-					}
-				}
-			}
-		} else {
-			return err
-		}
+	log.Print("Checking hash against VirusTotal...")
+	alreadyOnVT, err := checkHashVirusTotal(cfg.VirusTotalApiKey, hash, cfg.ScanOutputDir, outFileName)
+	if err != nil {
+		return err
 	}
 
 	// Upload to virus total
@@ -232,12 +239,14 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Get file size
 	fileSize := float64(handler.Size) / (1024 * 1024) // Size in MB
 
-	go func() {
-		err := checkVirusTotal(h.cfg, hash, fileSize, uploadFilename, data)
-		if err != nil {
-			log.Print()
-		}
-	}()
+	if h.cfg.UseVirusTotal {
+		go func() {
+			err := checkVirusTotal(h.cfg, hash, fileSize, uploadFilename, data)
+			if err != nil {
+				log.Print(err)
+			}
+		}()
+	}
 }
 
 func RunServer(cfg *config.Config) {
