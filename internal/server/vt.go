@@ -169,7 +169,7 @@ func uploadFileVirusTotal(apiKey string, hash string, fileSize float64, scanOutp
 
 	// Write JSON to file
 	scanFilename := time.Now().Format(time.UnixDate) + ".json"
-	scanFilepath := filepath.Join(scanOutputDir, scanFilename)
+	scanFilepath := filepath.Clean(filepath.Join(scanOutputDir, scanFilename))
 	outFile, err := os.Create(scanFilepath)
 	if err != nil { // Failed to create file
 		return err
