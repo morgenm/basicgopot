@@ -10,7 +10,7 @@ import (
 
 func main() {
 	// Load config
-	cfg, err := config.ReadConfig("config.json")
+	cfg, err := config.ReadConfig("config/config.json")
 	if errors.CheckErr(err, "Error reading config.json!") {
 		return
 	}

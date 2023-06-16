@@ -16,7 +16,7 @@ import (
 func TestCheckVirusTotalKnownHash(t *testing.T) {
 	// Quite ugly, but using config.json from top level dir so we
 	// have access to the legitimate API key
-	cfg, err := config.ReadConfig("../../config.json")
+	cfg, err := config.ReadConfig("../../config/config.json")
 	if err != nil {
 		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
 	}
@@ -44,7 +44,7 @@ func TestCheckVirusTotalKnownHash(t *testing.T) {
 func TestCheckVirusTotalRandomFile(t *testing.T) {
 	// Quite ugly, but using config.json from top level dir so we
 	// have access to the legitimate API key
-	cfg, err := config.ReadConfig("../../config.json")
+	cfg, err := config.ReadConfig("../../config/config.json")
 	if err != nil {
 		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
 	}
@@ -82,7 +82,7 @@ func TestCheckVirusTotalRandomFile(t *testing.T) {
 func TestCheckVirusTotalRandomFileTooBig(t *testing.T) {
 	// Quite ugly, but using config.json from top level dir so we
 	// have access to the legitimate API key
-	cfg, err := config.ReadConfig("../../config.json")
+	cfg, err := config.ReadConfig("../../config/config.json")
 	if err != nil {
 		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
 	}
