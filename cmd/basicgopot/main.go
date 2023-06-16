@@ -9,24 +9,28 @@ import (
 )
 
 func main() {
-	// Create upload directory
-	if _, err := os.Stat("uploads/"); os.IsNotExist(err) {
-		if errors.CheckErr(os.Mkdir("uploads/", 0o750), "Fatal error: Could not create uploads directory and it does not already exist!") {
-			return
-		}
-	}
-
-	// Create scans directory
-	if _, err := os.Stat("scans/"); os.IsNotExist(err) {
-		if errors.CheckErr(os.Mkdir("scans/", 0o750), "Fatal error: Could not create scans directory and it does not already exist!") {
-			return
-		}
-	}
-
 	// Load config
 	cfg, err := config.ReadConfig("config.json")
 	if errors.CheckErr(err, "Error reading config.json!") {
 		return
+	}
+
+	// Create upload directory, if specified
+	if cfg.UploadsDir != "" {
+		if _, err := os.Stat(cfg.UploadsDir); os.IsNotExist(err) {
+			if errors.CheckErr(os.Mkdir(cfg.UploadsDir, 0o750), "Fatal error: Could not create uploads directory and it does not already exist!") {
+				return
+			}
+		}
+	}
+
+	// Create scans directory
+	if cfg.ScanOutputDir != "" {
+		if _, err := os.Stat(cfg.ScanOutputDir); os.IsNotExist(err) {
+			if errors.CheckErr(os.Mkdir(cfg.ScanOutputDir, 0o750), "Fatal error: Could not create scans directory and it does not already exist!") {
+				return
+			}
+		}
 	}
 
 	// Start the server
