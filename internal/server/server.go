@@ -66,8 +66,9 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		uploadFilepath = filepath.Clean(filepath.Join("uploads/", timeUploaded))
 	}
 
-	// Inform user of success
-	fmt.Fprintf(w, "File uploaded!")
+	// Inform user of success by serving the upload success HTML file
+	http.Redirect(w, r, "uploaded.html", 303)
+	// fmt.Fprintf(w, "File uploaded!")
 	log.Print("File uploaded by user.")
 
 	// Get file hash
