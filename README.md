@@ -23,12 +23,13 @@ The configuration for **_basicgopot_** is stored in `config.json`. An example co
     "UseVirusTotal" : true, // Whether to use VirusTotal 
     "UploadVirusTotal" : true, // Whether to upload the sample to VirusTotal if its unique
     "VirusTotalApiKey" : "lol", // VirusTotal user API key (needed if UseVirusTotal is true)
-    "ScanOutputDir" : "scans/", // Directory to store downloaded VirusTotal scans in  
+    "ScanOutputDir" : "scans/", // Directory to store downloaded VirusTotal scans in 
+    "UploadsDir" : "uploads/", // Directory to store files uploaded to the server
     "UploadLog" : "uploads.json" // File for logging upload and scan/analysis information
 }
 ```
 
-If `UploadVirusTotal` is false, but `UseVirusTotal` is true, the uploaded samples' hashes will be checked against VirusTotal, but they will not be uploaded. Note: `UseVirusTotal` has precedence over `UploadVirusTotal`, so if `UseVirusTotal` is false and `UploadVirusTotal` is true, `UploadVirusTotal` will be ignored. If `ScanOutputDir` is set to equal `""` (empty string), VirusTotal scan data will not be saved. Additionally, if `UploadLog` is `""`, no upload and scan/analysis information will be logged to a file.
+If `UploadVirusTotal` is false, but `UseVirusTotal` is true, the uploaded samples' hashes will be checked against VirusTotal, but they will not be uploaded. Note: `UseVirusTotal` has precedence over `UploadVirusTotal`, so if `UseVirusTotal` is false and `UploadVirusTotal` is true, `UploadVirusTotal` will be ignored. If `ScanOutputDir` is set to equal `""` (empty string), VirusTotal scan data will not be saved. Additionally, if `UploadLog` is `""`, no upload and scan/analysis information will be logged to a file, and `UploadsDir` can be empty to signify no saving of uploaded files.
 
 ## Building/Running
 To run the honeypot, you can simply execute: `go run ./cmd/basicgopot`. 

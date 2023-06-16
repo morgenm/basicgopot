@@ -35,29 +35,40 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 	log.Print("File being uploaded by user...")
 
-	// Create file for writing.
-	timeUploaded := time.Now().Format(time.UnixDate)
-	uploadFilepath := filepath.Clean(filepath.Join("uploads/", timeUploaded))
-	outFile, err := os.Create(uploadFilepath)
-	errors.CheckErr(err, "Failed to create file!")
-
 	// Read uploaded file to byte array
 	data, err := io.ReadAll(file)
 	if errors.CheckErr(err, "Failed to read uploaded file!") {
 		return
 	}
 
-	// Write to file
-	_, err = outFile.Write(data)
-	if errors.CheckErr(err, "Error writing the uploaded file!") {
-		return
-	}
-	if errors.CheckErr(outFile.Close(), "Error closing the new uploaded file!") {
-		return
+	// Get time to create the upload file name, and to store it in the upload log
+	timeUploaded := time.Now().Format(time.UnixDate)
+
+	// Write file to uploads dir, if that is set in config
+	uploadFilepath := ""
+	if h.cfg.UploadsDir != "" {
+		// Create file for writing.
+		uploadFilepath = filepath.Clean(filepath.Join(h.cfg.UploadsDir, timeUploaded))
+		outFile, err := os.Create(uploadFilepath)
+		errors.CheckErr(err, "Failed to create file!")
+
+		// Write to file
+		_, err = outFile.Write(data)
+		if errors.CheckErr(err, "Error writing the uploaded file!") {
+			return
+		}
+		if errors.CheckErr(outFile.Close(), "Error closing the new uploaded file!") {
+			return
+		}
+	} else {
+		// We are still using uploadFilepath as the key value to the uploadLog. So, pass uploads/... as the path.
+		// This is not a great solution, but keeping this here until I think of a better key
+		uploadFilepath = filepath.Clean(filepath.Join("uploads/", timeUploaded))
 	}
 
-	// Inform user of success
-	fmt.Fprintf(w, "File uploaded!")
+	// Inform user of success by serving the upload success HTML file
+	http.Redirect(w, r, "uploaded.html", 303)
+	// fmt.Fprintf(w, "File uploaded!")
 	log.Print("File uploaded by user.")
 
 	// Get file hash

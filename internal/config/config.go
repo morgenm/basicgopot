@@ -17,6 +17,7 @@ type Config struct {
 	UploadVirusTotal bool  // Whether to upload to VT
 	VirusTotalApiKey string
 	ScanOutputDir    string // Directory to output VT scans, leave empty if no output scans are wanted
+	UploadsDir       string // Directory to output all files uploaded to server, leave empty if you don't want to save any uploads
 	UploadLog        string // JSON file to output log detailing upload file data
 }
 
