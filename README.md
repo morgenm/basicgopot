@@ -15,7 +15,7 @@ It serves HTML files that are put in the `web/static` directory. I included some
 If the file already has been uploaded to VirusTotal, the honeypot will download the file data (scan results and other info) that is provided by VirusTotal. But, if it is unique, it will upload the file and just grab the analysis results. For the latter scenario, I would recommend opening up the analysis in a browser by grabbing the hash from the analysis scan result, or the log file, and putting it into VirusTotal manually.
 
 ## Configuration
-The configuration for **_basicgopot_** is stored in `config.json`. An example config file is provided in `docs/config.json.example`. You will need to rename `docs/config.json.example` to `config.json` (make sure it's in the top-level directory!) and fill in the configuration variables as you see fit. If you wish to use VirusTotal, you will need to put your API key in the config. The configuration options are:
+The configuration for **_basicgopot_** is stored in `config/config.json`. An example config file is provided in `config/config.json.example`. You will need to rename `config/config.json.example` to `config/config.json` and fill in the configuration variables as you see fit. If you wish to use VirusTotal, you will need to put your API key in the config. The configuration options are:
 ```json
 {
     "ServerPort" : 8080, // The port the server runs on
@@ -31,7 +31,33 @@ The configuration for **_basicgopot_** is stored in `config.json`. An example co
 
 If `UploadVirusTotal` is false, but `UseVirusTotal` is true, the uploaded samples' hashes will be checked against VirusTotal, but they will not be uploaded. Note: `UseVirusTotal` has precedence over `UploadVirusTotal`, so if `UseVirusTotal` is false and `UploadVirusTotal` is true, `UploadVirusTotal` will be ignored. If `ScanOutputDir` is set to equal `""` (empty string), VirusTotal scan data will not be saved. Additionally, if `UploadLog` is `""`, no upload and scan/analysis information will be logged to a file, and `UploadsDir` can be empty to signify no saving of uploaded files.
 
-## Building/Running
+## Running the tool
+
+You can grab the latest release for this project from GitHub and just run the executable after creating the config file as described above. You can also get and run the Docker image, build the docker image locally, or build the project locally. All of these are described below.
+
+### Docker image
+
+Get the docker image by running:
+```bash
+docker pull morgenm/basicgopot:latest
+```
+
+To run the docker image:
+```bash
+echo "{}" > uploads.json
+docker run --publish 8080:8080 -v $(pwd)/config:/config -v $(pwd)/uploads:/uploads-docker:rw -v $(pwd)/scans:/scans -v $(pwd)/uploads.json:/uploads.json basicgopot
+```
+The `touch` command must be run the first time the server is run because `uploads.json` must exist for it to not be mapped as a directory by docker.
+
+### Building docker image
+
+After downloading the source, run:
+```bash
+docker build -t basicgopot -f build/Dockerfile .
+```
+Where `basicgopot` can be any tag name.
+
+### Building Locally
 To run the honeypot, you can simply execute: `go run ./cmd/basicgopot`. 
 
 If you wish to build, you can execute: `go build -o basicgopot.o ./cmd/basicgopot`, where `basicgopot.o` is whatever you wish to name the exectuable. If you do not specify the output name, the binary output will be named `basicgopot` (on Linux), which is not ignored by the .gitignore. This is something to keep in mind if you contribute.
