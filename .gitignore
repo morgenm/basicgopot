@@ -9,6 +9,8 @@
 *.dylib
 *.o
 
+dist
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -32,3 +34,5 @@ uploads.json
 
 # Scan results
 scans/
+
+/basicgopot

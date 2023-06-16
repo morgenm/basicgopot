@@ -1,0 +1,29 @@
+project_name: basicgopot
+
+release:
+  github:
+    owner: morgenm
+    name: basicgopo
+
+builds:
+  - main: ./cmd/basicgopot/
+    binary: basicgopot
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags: -X main.Version={{.Version}} -X main.GitTag={{.Tag}} -X main.BuildDate={{.Date}}
+    env:
+      - CGO_ENABLED=0
+
+archives:
+  -
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE.md
+      - README.md
+      - config/config.json.example
+      - web/

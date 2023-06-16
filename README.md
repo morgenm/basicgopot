@@ -55,14 +55,13 @@ The `touch` command must be run the first time the server is run because `upload
 
 After downloading the source, run:
 ```bash
-docker build -t basicgopot -f build/Dockerfile .
+make docker
 ```
-Where `basicgopot` can be any tag name.
+The docker image will be tagged as `basicgopot`.
 
 ### Building Locally
-To run the honeypot, you can simply execute: `go run ./cmd/basicgopot`. 
 
-If you wish to build, you can execute: `go build -o basicgopot.o ./cmd/basicgopot`, where `basicgopot.o` is whatever you wish to name the exectuable. If you do not specify the output name, the binary output will be named `basicgopot` (on Linux), which is not ignored by the .gitignore. This is something to keep in mind if you contribute.
+If you wish to build, you can execute: `make`. This will output the executable file `basicgopot` on Linux or Mac, and `basicgopot.exe` on Windows
 
 ## VirusTotal
 Once a file is uploaded to the honeypot, it will be written to the "uploads" folder, checked against VirusTotal, and uploaded to VirusTotal if it is unique, as mentioned above. The log file will state that a file is uploaded, its hash will be listed, and some basic information about the VirusTotal upload will be outputted. 
