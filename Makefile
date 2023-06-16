@@ -22,7 +22,7 @@ docker:
 	docker build -t basicgopot -f build/Dockerfile .
 
 release:
-	goreleaser build
+	goreleaser release --clean
 
 clean:
 	go clean
