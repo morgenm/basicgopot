@@ -44,7 +44,7 @@ docker pull morgenm/basicgopot:latest
 
 To run the docker image:
 ```bash
-touch uploads.json
+echo "{}" > uploads.json
 docker run --publish 8080:8080 -v $(pwd)/config:/config -v $(pwd)/uploads:/uploads-docker:rw -v $(pwd)/scans:/scans -v $(pwd)/uploads.json:/uploads.json basicgopot
 ```
 The `touch` command must be run the first time the server is run because `uploads.json` must exist for it to not be mapped as a directory by docker.
