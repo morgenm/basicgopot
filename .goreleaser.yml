@@ -3,7 +3,7 @@ project_name: basicgopot
 release:
   github:
     owner: morgenm
-    name: basicgopo
+    name: basicgopot
 
 builds:
   - main: ./cmd/basicgopot/
