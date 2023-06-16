@@ -27,5 +27,8 @@ uploads/
 # Config
 config.json
 
+# Upload Log
+uploads.json
+
 # Scan results
 scans/
