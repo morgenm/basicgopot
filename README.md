@@ -3,6 +3,7 @@
 [![golangci](https://github.com/morgenm/basicgopot/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/morgenm/basicgopot/actions/workflows/golangci-lint.yml)
 [![Gosec](https://github.com/morgenm/basicgopot/actions/workflows/gosec.yml/badge.svg)](https://github.com/morgenm/basicgopot/actions/workflows/gosec.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/morgenm/basicgopot)](https://goreportcard.com/report/github.com/morgenm/basicgopot)
+[![Docs](https://pkg.go.dev/badge/github.com/morgenm/basicgopot)](https://pkg.go.dev/github.com/morgenm/basicgopot)
 [![GitHub Downloads](https://img.shields.io/github/downloads/morgenm/basicgopot/total)](https://github.com/morgenm/basicgopot/releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/morgenm/basicgopot)](https://hub.docker.com/r/morgenm/basicgopot/)
 
