@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/morgenm/basicgopot/internal/config"
-	"github.com/morgenm/basicgopot/internal/errors"
 )
 
 type FileUploadHandler struct {
@@ -21,7 +20,8 @@ type FileUploadHandler struct {
 
 func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Set file size limit for the upload
-	if errors.CheckErr(r.ParseMultipartForm(h.cfg.UploadLimitMB<<20), "Error parsing upload form!") {
+	if err := r.ParseMultipartForm(h.cfg.UploadLimitMB << 20); err != nil {
+		log.Print("Error parsing upload form!")
 		return
 	}
 
@@ -37,7 +37,8 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Read uploaded file to byte array
 	data, err := io.ReadAll(file)
-	if errors.CheckErr(err, "Failed to read uploaded file!") {
+	if err != nil {
+		log.Print("Failed to read uploaded file!")
 		return
 	}
 
@@ -50,14 +51,19 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Create file for writing.
 		uploadFilepath = filepath.Clean(filepath.Join(h.cfg.UploadsDir, timeUploaded))
 		outFile, err := os.Create(uploadFilepath)
-		errors.CheckErr(err, "Failed to create file!")
+		if err != nil {
+			log.Print("Failed to create file!")
+			return
+		}
 
 		// Write to file
 		_, err = outFile.Write(data)
-		if errors.CheckErr(err, "Error writing the uploaded file!") {
+		if err != nil {
+			log.Print("Error writing the uploaded file!")
 			return
 		}
-		if errors.CheckErr(outFile.Close(), "Error closing the new uploaded file!") {
+		if err := outFile.Close(); err != nil {
+			log.Print("Error closing the new uploaded file!")
 			return
 		}
 	} else {
@@ -74,7 +80,8 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Get file hash
 	hasher := sha256.New()
 	_, err = hasher.Write(data)
-	if errors.CheckErr(err, "Error getting file hash!") {
+	if err != nil {
+		log.Print("Error getting file hash!")
 		return
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
@@ -137,7 +144,9 @@ func RunServer(cfg *config.Config) {
 
 	// Listen
 	log.Print("Server listening on port ", portStr)
-	errors.CheckErr(server.ListenAndServe(), "Error while listening and serving!")
+	if err := server.ListenAndServe(); err != nil {
+		log.Print("Error while listening and serving!")
+	}
 
 	// Clean up
 	uploadLog.quitSavingLoop = true

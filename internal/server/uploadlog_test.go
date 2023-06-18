@@ -3,7 +3,7 @@ package server
 import (
 	"testing"
 
-	"github.com/morgenm/basicgopot/internal/errors"
+	"github.com/morgenm/basicgopot/pkg/errors"
 )
 
 // Test adding file data

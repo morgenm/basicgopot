@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/morgenm/basicgopot/internal/errors"
+	"github.com/morgenm/basicgopot/pkg/errors"
 )
 
 type UploadLog struct {

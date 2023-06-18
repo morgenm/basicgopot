@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-
-	"github.com/morgenm/basicgopot/internal/errors"
 )
 
 type Config struct {
@@ -23,7 +21,7 @@ type Config struct {
 
 func ReadConfig(filename string) (*Config, error) {
 	f, err := os.Open(filepath.Clean(filename))
-	if errors.CheckErr(err, "Error opening config file!") {
+	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
@@ -37,7 +35,7 @@ func ReadConfig(filename string) (*Config, error) {
 		data = append(data, line...)
 		data = append(data, '\n')
 	}
-	if errors.CheckErr(scanner.Err(), "Error reading config file!") {
+	if err != nil {
 		return nil, err
 	}
 
