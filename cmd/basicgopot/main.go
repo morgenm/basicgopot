@@ -1,3 +1,14 @@
+// Basicgopot is a simple HTTP honeypot.
+// It serves an HTTP server that has an unrestricted file upload via POST requests. The server's
+// functionality can be configured with the config file. It can save all files that are uploaded,
+// check them against VirusTotal and upload them if they are unique, and save the analysis/scan
+// to a file.
+//
+// Usage:
+//
+//	basicgopot
+//
+// There are no flags, as all options are defined in the config file.
 package main
 
 import (
@@ -8,6 +19,7 @@ import (
 	"github.com/morgenm/basicgopot/internal/server"
 )
 
+// Main reads the config, creates upload and scan dirs if configured to, and runs the server.
 func main() {
 	// Load config
 	cfg, err := config.ReadConfig("config/config.json")
