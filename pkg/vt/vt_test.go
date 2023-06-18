@@ -3,13 +3,12 @@ package vt
 import (
 	"crypto/sha256"
 	"fmt"
-	"log"
 	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/morgenm/basicgopot/internal/config"
-	"github.com/morgenm/basicgopot/internal/errors"
+	"github.com/morgenm/basicgopot/pkg/errors"
 )
 
 // Test CheckHashVirusTotal using a file hash already on VT.
@@ -56,7 +55,6 @@ func TestCheckHashVirusTotalRandomFile(t *testing.T) {
 		t.Fatalf(`checkVirusTotal test with random file failed when generating random file with error %v`, err)
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
-	log.Print(hash)
 
 	reader, err := CheckHashVirusTotal(cfg.VirusTotalApiKey, hash)
 	if err != nil {

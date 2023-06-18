@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/morgenm/basicgopot/internal/errors"
+	"github.com/morgenm/basicgopot/pkg/errors"
 )
 
 type Config struct {

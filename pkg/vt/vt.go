@@ -1,6 +1,4 @@
-// The vt package implements routines for checking a file hash against VirusTotal
-// and for uploading a file to VirusTotal.
-
+// The vt package implements routines for checking a file hash against VirusTotal and for uploading a file to VirusTotal.
 package vt
 
 import (
@@ -11,7 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 
-	"github.com/morgenm/basicgopot/internal/errors"
+	"github.com/morgenm/basicgopot/pkg/errors"
 )
 
 // CheckHashVirusTotal will send a file hash to VirusTotal and return the scan output as (*io.ReadCloser, nil) if the file

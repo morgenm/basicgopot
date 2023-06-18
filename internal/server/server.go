@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/morgenm/basicgopot/internal/config"
-	"github.com/morgenm/basicgopot/internal/errors"
+	"github.com/morgenm/basicgopot/pkg/errors"
 )
 
 type FileUploadHandler struct {
