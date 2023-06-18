@@ -1,19 +1,6 @@
 // The errors package provides error types specific to basicgopot.
 package errors
 
-import (
-	"log"
-)
-
-func CheckErr(err error, outString string) bool {
-	if err != nil {
-		log.Print(outString, " ", err)
-		return true
-	} else {
-		return false
-	}
-}
-
 type (
 	// A VirusTotalAPIKeyError is an error indicating that VirusTotal did
 	// not accept the API key provided in the config.
