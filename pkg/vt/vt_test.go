@@ -22,10 +22,7 @@ func TestCheckHashVirusTotalKnownHash(t *testing.T) {
 	if err != nil {
 		cfg, err = config.ReadConfigFromFile("config/config.json")
 		if err != nil {
-			pwd, err := os.Getwd()
-			if err != nil {
-				t.Fatalf(`Error getting cwd.`)
-			}
+			pwd, _ := os.Getwd()
 			t.Fatalf(`checkVirusTotal with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 		}
 	}
