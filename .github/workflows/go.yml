@@ -38,13 +38,18 @@ jobs:
         
     - name: Checkout Source 
       uses: actions/checkout@v3
-      
-    - name: Run coverage
+    
+    - name: Create Config file with Secret
       run: |
-        echo $PWD
         cp config/config.json.example config/config.json
         jq '.VirusTotalApiKey = "{{ secrets.VIRUS_TOTAL_API_KEY }}"' config/config.json > config/config.json
-        echo $(ls -l config/config.json)
+
+    - name: Get config path
+      run: | 
+        echo "FILE_PATH=$(pwd)/config/config.json" >> $GITHUB_ENV
+
+    - name: Run coverage
+      run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
       
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
