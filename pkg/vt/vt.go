@@ -103,7 +103,7 @@ func UploadFileVirusTotal(apiKey string, fileName string, data []byte) (*io.Read
 		return nil, err
 	}
 	var decoded map[string]interface{}
-	if err = json.Unmarshal([]byte(body), &decoded); err != nil {
+	if err = json.Unmarshal(body, &decoded); err != nil {
 		return nil, err
 	}
 	jData := decoded["data"].(map[string]interface{})

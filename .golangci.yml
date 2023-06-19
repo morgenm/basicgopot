@@ -5,6 +5,7 @@ linters:
     - godot
     - nilnil
     - predeclared
+    - unconvert
 
 linter-settings:
   go-cyclo:
