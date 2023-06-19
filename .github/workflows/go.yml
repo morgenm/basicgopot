@@ -46,7 +46,7 @@ jobs:
 
     - name: Get config path
       run: | 
-        echo "FILE_PATH=$(pwd)/config/config.json" >> $GITHUB_ENV
+        echo "BASICGOPOT_CONFIG_FILE=$(pwd)/config/config.json" >> $GITHUB_ENV
 
     - name: Run coverage
       run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
