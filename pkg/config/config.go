@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"github.com/morgenm/basicgopot/pkg/errors"
 )
 
 type WebHookConfig struct {
@@ -36,6 +38,13 @@ func loadConfig(configData []byte) (*Config, error) {
 	err := json.Unmarshal(configData, &config)
 	if err != nil {
 		return nil, err
+	}
+
+	// Validate that all the WebHooks have a valid method.
+	for _, webHook := range config.UploadWebHooks {
+		if webHook.Method != "POST" {
+			return nil, &errors.WebHookInvalidMethod{}
+		}
 	}
 
 	return &config, nil

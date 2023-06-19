@@ -8,14 +8,19 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/morgenm/basicgopot/pkg/config"
+	"github.com/morgenm/basicgopot/pkg/webhook"
 )
 
+type WebHookCallback func([]byte)
+
 type FileUploadHandler struct {
-	cfg       *config.Config
-	uploadLog *UploadLog
+	cfg                    *config.Config
+	uploadLog              *UploadLog
+	uploadWebHookCallbacks []WebHookCallback
 }
 
 func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -87,6 +92,7 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 	log.Print("File hash: ", hash)
 
+	// Check VirusTotal
 	if h.cfg.UseVirusTotal {
 		go func() {
 			err := checkVirusTotal(h.cfg, h.uploadLog, uploadFilepath, hash, handler.Filename, data)
@@ -96,10 +102,41 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
+	if len(h.cfg.UploadWebHooks) > 0 {
+		go func() {
+			for _, webHook := range h.uploadWebHookCallbacks {
+				webHook(data)
+			}
+		}()
+	}
+
 	// Add basic info about the uploaded file to the log
 	if err = h.uploadLog.AddFile(uploadFilepath, handler.Filename, timeUploaded, "", hash, "Not uploaded"); err != nil {
 		panic(err)
 	}
+}
+
+func writeWebHookResponseToFile(cfg *config.Config, reader io.ReadCloser, webHookFileName string) error {
+	// Read the result
+	body, err := io.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+
+	// Write JSON to file
+	webHookFilepath := filepath.Clean(filepath.Join(cfg.WebHookDir, webHookFileName))
+	outFile, err := os.Create(webHookFilepath)
+	if err != nil { // Failed to create file
+		return err
+	}
+	if _, err = outFile.Write(body); err != nil {
+		return err
+	}
+	if err = outFile.Close(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func RunServer(cfg *config.Config) {
@@ -119,8 +156,39 @@ func RunServer(cfg *config.Config) {
 		}
 	}()
 
-	// Create FileUploadHandler to add route to mux
-	fileUploadHandler := FileUploadHandler{cfg, &uploadLog}
+	// Create WebHook callbacks
+	uploadWebHookCallbacks := []WebHookCallback{}
+	for i, webHookConfig := range cfg.UploadWebHooks {
+		uploadWebHookCallbacks = append(uploadWebHookCallbacks, func(data []byte) {
+			// Create the map for all the WebHook strings.
+			webHookStringMap := map[string][]byte{
+				"$FILE": data,
+			}
+
+			// Create WebHook.
+			w := webhook.NewWebHook(webHookConfig, webHookStringMap)
+			if w == nil {
+				log.Print("Error creating a WebHook for file uploads!")
+				return
+			}
+
+			// Execute WebHook.
+			reader, err := w.Execute()
+			if err != nil {
+				log.Print("Error executing a WebHook for file uploads: ", err)
+				return
+			}
+
+			webHookNum := strconv.Itoa(i)
+			webHookFilename := webHookNum + time.Now().Format(time.UnixDate) + ".json"
+			if err := writeWebHookResponseToFile(cfg, *reader, webHookFilename); err != nil {
+				log.Print("Error writing a WebHook response to file: ", err)
+			}
+		})
+	}
+
+	// Create FileUploadHandler to add route to mux.
+	fileUploadHandler := FileUploadHandler{cfg, &uploadLog, uploadWebHookCallbacks}
 
 	// Create FileServer Handler to add route to mux
 	fileServer := http.FileServer(http.Dir("web/static"))

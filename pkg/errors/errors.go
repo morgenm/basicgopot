@@ -28,7 +28,7 @@ type (
 	// was accessed.
 	UploadNotInLog struct{}
 	// An WebHookInvalidMethod error indicates that a WebHook attempted to execute with
-	// an invalid method type.
+	// an invalid method type, or that it was defined in the config with an invalid method.
 	WebHookInvalidMethod struct{}
 	// An WebHookBadResponse error indicates that a WebHook did not receive a status code
 	// 200 on execution.
@@ -68,7 +68,7 @@ func (e *UploadNotInLog) Error() string {
 }
 
 func (e *WebHookInvalidMethod) Error() string {
-	return "An invalid method was used in a request!"
+	return "A WebHook has an invalid method!"
 }
 
 func (e *WebHookBadResponse) Error() string {
