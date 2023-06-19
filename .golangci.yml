@@ -4,6 +4,7 @@ linters:
     - gofumpt
     - godot
     - nilnil
+    - predeclared
 
 linter-settings:
   go-cyclo:

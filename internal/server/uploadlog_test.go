@@ -175,7 +175,7 @@ func TestLoadFromBytesLarge(t *testing.T) {
 		uploads[fileName] = uploadSample
 	}
 
-	uploadsJson, nil := json.Marshal(uploads)
+	uploadsJson, _ := json.Marshal(uploads)
 
 	if err := u.loadFromBytes(uploadsJson); err != nil {
 		t.Fatalf(`TestLoadFromBytesLarge = %v, want nil`, err)
