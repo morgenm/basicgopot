@@ -47,7 +47,6 @@ func TestCheckHashVirusTotalRandomFile(t *testing.T) {
 		// Quite ugly, but using config.json from top level dir so we
 		// have access to the legitimate API key
 		configPath = "../../config/config.json"
-
 	}
 
 	cfg, err := config.ReadConfigFromFile(configPath)
@@ -87,7 +86,6 @@ func TestUploadFileVirusTotalRandomFile(t *testing.T) {
 		// Quite ugly, but using config.json from top level dir so we
 		// have access to the legitimate API key
 		configPath = "../../config/config.json"
-
 	}
 
 	cfg, err := config.ReadConfigFromFile(configPath)
@@ -118,7 +116,6 @@ func TestUploadFileVirusTotalRandomFileTooBig(t *testing.T) {
 		// Quite ugly, but using config.json from top level dir so we
 		// have access to the legitimate API key
 		configPath = "../../config/config.json"
-
 	}
 
 	cfg, err := config.ReadConfigFromFile(configPath)
@@ -149,7 +146,6 @@ func FuzzUploadFileVirusTotal(f *testing.F) {
 		// Quite ugly, but using config.json from top level dir so we
 		// have access to the legitimate API key
 		configPath = "../../config/config.json"
-
 	}
 
 	cfg, err := config.ReadConfigFromFile(configPath)
