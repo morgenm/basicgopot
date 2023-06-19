@@ -35,4 +35,8 @@ uploads.json
 # Scan results
 scans/
 
+# WebHook results
+webhooks/
+
+# Binary
 /basicgopot

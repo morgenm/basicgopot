@@ -9,7 +9,7 @@ import (
 
 	goerrors "errors"
 
-	"github.com/morgenm/basicgopot/internal/config"
+	"github.com/morgenm/basicgopot/pkg/config"
 	"github.com/morgenm/basicgopot/pkg/errors"
 )
 

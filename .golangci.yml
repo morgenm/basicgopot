@@ -10,3 +10,6 @@ linters:
 linter-settings:
   go-cyclo:
     min-complexity: 15
+  godot:
+    scope: all
+    capital: true
