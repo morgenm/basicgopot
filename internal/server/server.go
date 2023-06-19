@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/morgenm/basicgopot/pkg/config"
@@ -156,9 +155,9 @@ func RunServer(cfg *config.Config) {
 		}
 	}()
 
-	// Create WebHook callbacks
+	// Create Upload WebHook callbacks
 	uploadWebHookCallbacks := []WebHookCallback{}
-	for i, webHookConfig := range cfg.UploadWebHooks {
+	for webHookName, webHookConfig := range cfg.UploadWebHooks {
 		uploadWebHookCallbacks = append(uploadWebHookCallbacks, func(data []byte) {
 			// Create the map for all the WebHook strings.
 			webHookStringMap := map[string][]byte{
@@ -179,8 +178,7 @@ func RunServer(cfg *config.Config) {
 				return
 			}
 
-			webHookNum := strconv.Itoa(i)
-			webHookFilename := webHookNum + time.Now().Format(time.UnixDate) + ".json"
+			webHookFilename := webHookName + " " + time.Now().Format(time.UnixDate)
 			if err := writeWebHookResponseToFile(cfg, *reader, webHookFilename); err != nil {
 				log.Print("Error writing a WebHook response to file: ", err)
 			}
