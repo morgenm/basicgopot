@@ -40,13 +40,7 @@ jobs:
       uses: actions/checkout@v3
     
     - name: Create Config file with Secret
-      run: jq '.VirusTotalApiKey = "TESTAPI"' config/config.json.example > config/config.json
-
-    - name: Cat old file
-      run: cat config/config.json.example
-
-    - name: Cat new file
-      run: cat config/config.json
+      run: jq '.VirusTotalApiKey = "{{ secrets.VIRUS_TOTAL_API_KEY }}"' config/config.json.example > config/config.json
 
     - name: Get config path
       run: | 

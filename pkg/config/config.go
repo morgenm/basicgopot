@@ -4,7 +4,6 @@ package config
 import (
 	"bufio"
 	"encoding/json"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -38,7 +37,6 @@ func loadConfig(configData []byte) (*Config, error) {
 
 	err := json.Unmarshal(configData, &config)
 	if err != nil {
-		log.Print(string(configData))
 		return nil, err
 	}
 
