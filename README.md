@@ -61,7 +61,7 @@ The configuration for **_basicgopot_** is stored in `config/config.json`. An exa
     "ServerPort" : 8080, // The port the server runs on
     "UploadLimitMB" : 512, // Size limit in Megabytes for a single file upload to the server
     "UseVirusTotal" : true, // Whether to use VirusTotal 
-    "UploadVirusTotal" : true, // Whether to upload the sample to VirusTotal if its unique
+    "UploadVirusTotal" : true, // Whether to upload the sample to VirusTotal if it's unique
     "VirusTotalApiKey" : "lol", // VirusTotal user API key (needed if UseVirusTotal is true)
     "ScanOutputDir" : "scans/", // Directory to store downloaded VirusTotal scans in 
     "UploadsDir" : "uploads/", // Directory to store files uploaded to the server
