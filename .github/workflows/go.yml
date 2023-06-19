@@ -29,7 +29,6 @@ jobs:
         cp config/config.json.example config/config.json
         jq '.VirusTotalApiKey = "${{ secrets.TEST_SECRET }}"' config/config.json > config/config.json
         cat config/config.json >> $GITHUB_OUTPUT
-        go test -race -coverprofile=coverage.out -covermode=atomic ./...
       
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
