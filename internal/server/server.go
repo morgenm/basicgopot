@@ -14,7 +14,7 @@ import (
 	"github.com/morgenm/basicgopot/pkg/webhook"
 )
 
-type WebHookCallback func([]byte)
+type WebHookCallback func([]byte, string)
 
 type FileUploadHandler struct {
 	cfg                    *config.Config
@@ -91,6 +91,11 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 	log.Print("File hash: ", hash)
 
+	// Add basic info about the uploaded file to the log
+	if err = h.uploadLog.AddFile(uploadFilepath, handler.Filename, timeUploaded, "", hash, "Not uploaded"); err != nil {
+		panic(err)
+	}
+
 	// Check VirusTotal
 	if h.cfg.UseVirusTotal {
 		go func() {
@@ -104,14 +109,9 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(h.cfg.UploadWebHooks) > 0 {
 		go func() {
 			for _, webHook := range h.uploadWebHookCallbacks {
-				webHook(data)
+				webHook(data, uploadFilepath)
 			}
 		}()
-	}
-
-	// Add basic info about the uploaded file to the log
-	if err = h.uploadLog.AddFile(uploadFilepath, handler.Filename, timeUploaded, "", hash, "Not uploaded"); err != nil {
-		panic(err)
 	}
 }
 
@@ -158,7 +158,7 @@ func RunServer(cfg *config.Config) {
 	// Create Upload WebHook callbacks
 	uploadWebHookCallbacks := []WebHookCallback{}
 	for webHookName, webHookConfig := range cfg.UploadWebHooks {
-		uploadWebHookCallbacks = append(uploadWebHookCallbacks, func(data []byte) {
+		uploadWebHookCallbacks = append(uploadWebHookCallbacks, func(data []byte, uploadPath string) {
 			// Create the map for all the WebHook strings.
 			webHookStringMap := map[string][]byte{
 				"$FILE": data,
@@ -181,6 +181,12 @@ func RunServer(cfg *config.Config) {
 			webHookFilename := webHookName + " " + time.Now().Format(time.UnixDate)
 			if err := writeWebHookResponseToFile(cfg, *reader, webHookFilename); err != nil {
 				log.Print("Error writing a WebHook response to file: ", err)
+				return
+			}
+
+			if err = uploadLog.UpdateAddWebHookPath(uploadPath, webHookName, webHookFilename); err != nil {
+				log.Print("Error updating UploadLog with WebHook filepath!")
+				return
 			}
 		})
 	}

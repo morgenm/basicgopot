@@ -35,6 +35,7 @@ func (uploadLog *UploadLog) AddFile(uploadPath string, originalFilename string, 
 		"Scan File":         scanPath,
 		"File Hash":         hash,
 		"Scan Type":         scanType, // Results for file already in VT, Analysis for queued/new upload, or Not Uploaded if not yet uploaded or not going to upload
+		"WebHookResults":    make(map[string]string),
 	}
 
 	// Add to uploadLog
@@ -62,6 +63,7 @@ func (uploadLog *UploadLog) UpdateFile(uploadPath string, originalFilename strin
 		"Scan File":         scanPath,
 		"File Hash":         hash,
 		"Scan Type":         scanType, // Results for file already in VT, Analysis for queued/new upload
+		"WebHookResults":    make(map[string]string),
 	}
 
 	// Add to uploadLog
@@ -82,6 +84,21 @@ func (uploadLog *UploadLog) UpdateFileScan(uploadPath string, newScanPath string
 
 	uploadLog.uploads[uploadPath].(map[string]interface{})["Scan File"] = newScanPath
 	uploadLog.uploads[uploadPath].(map[string]interface{})["Scan Type"] = newScanType
+	return nil
+}
+
+// Update the WebHook file paths for an already existing entry.
+func (uploadLog *UploadLog) UpdateAddWebHookPath(uploadPath string, webHookName string, webHookPath string) error {
+	uploadLog.mutx.Lock()
+	defer uploadLog.mutx.Unlock()
+
+	if _, ok := uploadLog.uploads[uploadPath]; !ok {
+		return &errors.UploadNotInLog{}
+	}
+
+	webHookResults := uploadLog.uploads[uploadPath].(map[string]interface{})["WebHookResults"].(map[string]string)
+	webHookResults[webHookName] = webHookPath
+
 	return nil
 }
 
