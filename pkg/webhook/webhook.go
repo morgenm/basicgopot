@@ -14,10 +14,10 @@ import (
 // WebHook is a request that is made by the server once an event occurs. Currently, the only type
 // of WebHook are those that are run once a file is uploaded to a server.
 type WebHook struct {
-	URL       string // URL that the request will be made to.
-	Method    string // HTTP method for the request.
-	Headers   string // HTTP headers for the request.
-	DataBytes []byte // Actual data to be sent in the request
+	URL       string            // URL that the request will be made to.
+	Method    string            // HTTP method for the request.
+	Headers   map[string]string // HTTP headers for the request.
+	DataBytes []byte            // Actual data to be sent in the request
 }
 
 // NewWebHook creates a WebHook from a WebHookConfig. In doing so, it will evaluate any WebHook strings like $FILE.
@@ -95,6 +95,9 @@ func (w *WebHook) makePostRequest() (*io.ReadCloser, error) {
 
 	req.Header.Add("Content-Type", writer.FormDataContentType())
 	req.Header.Add("boundary", writer.Boundary())
+	for headerName, headerVal := range w.Headers {
+		req.Header.Add(headerName, headerVal)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {

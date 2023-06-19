@@ -11,10 +11,10 @@ import (
 )
 
 type WebHookConfig struct {
-	URL     string // URL that the request will be made to.
-	Method  string // HTTP method for the request.
-	Headers string // HTTP headers for the request.
-	Data    string // Data to be sent in the request if it has method POST.
+	URL     string            // URL that the request will be made to.
+	Method  string            // HTTP method for the request.
+	Headers map[string]string // HTTP headers for the request.
+	Data    string            // Data to be sent in the request if it has method POST.
 }
 
 type Config struct {

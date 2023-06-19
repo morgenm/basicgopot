@@ -71,7 +71,9 @@ The configuration for **_basicgopot_** is stored in `config/config.json`. An exa
         "Flask" : {
             "URL" : "http://localhost:5000",
             "Method" : "POST",
-            "Headers" : "Authorization: Bearer",
+            "Headers" : {
+                "Authorization": "Bearer"
+            },
             "Data" : "$FILE"
         }  
     }

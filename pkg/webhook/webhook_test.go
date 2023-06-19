@@ -22,10 +22,12 @@ func TestNewWebHookEmpty(t *testing.T) {
 // Test NewWebHook using some valid data.
 func TestNewWebHook(t *testing.T) {
 	c := config.WebHookConfig{
-		URL:     "google.com/",
-		Method:  "POST",
-		Headers: "Authorization: Bearer",
-		Data:    "TEST $FILE $FILE TEST",
+		URL:    "google.com/",
+		Method: "POST",
+		Headers: map[string]string{
+			"Authorization": "Bearer",
+		},
+		Data: "TEST $FILE $FILE TEST",
 	}
 
 	webHookStrings := make(map[string][]byte)
@@ -50,9 +52,11 @@ func TestNewWebHook(t *testing.T) {
 // Test Execute for POST request by spawning a webserver and receiving data.
 func TestExecutePOST(t *testing.T) {
 	c := config.WebHookConfig{
-		Method:  "POST",
-		Headers: "Authorization: Bearer",
-		Data:    "TEST $FILE $FILE TEST",
+		Method: "POST",
+		Headers: map[string]string{
+			"Authorization": "Bearer",
+		},
+		Data: "TEST $FILE $FILE TEST",
 	}
 
 	webHookStrings := make(map[string][]byte)
@@ -61,6 +65,17 @@ func TestExecutePOST(t *testing.T) {
 
 	// Create test server for receiving and validating WebHook POST request.
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Validate the headers
+		hasAuth := false
+		for _, header := range r.Header["Authorization"] {
+			if header == "Bearer" {
+				hasAuth = true
+			}
+		}
+		if !hasAuth {
+			t.Fatalf(`TestExecutePOST: missing Authorization header`)
+		}
+
 		// Validate that the request has the file.
 		formFile, _, err := r.FormFile("file")
 		if err != nil {

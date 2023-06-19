@@ -12,7 +12,9 @@
         "Flask" : {
             "URL" : "http://localhost:5000",
             "Method" : "POST",
-            "Headers" : "Authorization: Bearer",
+            "Headers" : {
+                "Authorization": "Bearer"
+            },
             "Data" : "$FILE"
         }  
     }
