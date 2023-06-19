@@ -1,4 +1,7 @@
 # BasicGoPot
+
+**_A highly configurable and customizable honeypot server written in Go._**
+
 [![Go](https://github.com/morgenm/basicgopot/actions/workflows/go.yml/badge.svg)](https://github.com/morgenm/basicgopot/actions/workflows/go.yml)
 [![golangci](https://github.com/morgenm/basicgopot/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/morgenm/basicgopot/actions/workflows/golangci-lint.yml)
 [![Gosec](https://github.com/morgenm/basicgopot/actions/workflows/gosec.yml/badge.svg)](https://github.com/morgenm/basicgopot/actions/workflows/gosec.yml)
@@ -7,36 +10,18 @@
 [![GitHub Downloads](https://img.shields.io/github/downloads/morgenm/basicgopot/total)](https://github.com/morgenm/basicgopot/releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/morgenm/basicgopot)](https://hub.docker.com/r/morgenm/basicgopot/)
 
-**_A basic honeypot written in Go._**
+## About
+Customizable HTTP honeypot which saves and logs all files uploaded to it. It can check file hashes against VirusTotal, upload files to VirusTotal, and save VirusTotal scan results. Configurable WebHooks let you easily customize what the server does once a file is uploaded. You can use any **HTML** and **CSS** to make the server look how you want it.
 
-![Basicgopot](https://raw.githubusercontent.com/morgenm/basicgopot/275d8f8fedc251dedce6a047a0cd8b023a94f2f8/docs/basicgopot.gif)
+## Install
 
-This honeypot is an HTTP server which will allow the user to upload any type of file. Uploaded files will be saved and scanned by VirusTotal, per the default configuration. To learn how to configure the server, see [Configuration](#configuration).
+You can grab the latest release for this project from GitHub and just run the executable after [creating the config file](#configuration). Other options are listed below.
 
-It serves HTML files that are put in the `web/static` directory. I included some rudimentary templates for the web server in `web/templates`. By default, `web/static` is a symbolic link to the `web/firmware_upload_v2` template. The program will create the `uploads` and `scans` directories. Any files uploaded to the server will be in the `uploads` directory, and VirusTotal results will be in the `scans` directory.
+### Install with *go install*
 
-If the file already has been uploaded to VirusTotal, the honeypot will download the file data (scan results and other info) that is provided by VirusTotal. But, if it is unique, it will upload the file and just grab the analysis results. For the latter scenario, I would recommend opening up the analysis in a browser by grabbing the hash from the analysis scan result, or the log file, and putting it into VirusTotal manually.
-
-## Configuration
-The configuration for **_basicgopot_** is stored in `config/config.json`. An example config file is provided in `config/config.json.example`. You will need to rename `config/config.json.example` to `config/config.json` and fill in the configuration variables as you see fit. If you wish to use VirusTotal, you will need to put your API key in the config. The configuration options are:
-```json
-{
-    "ServerPort" : 8080, // The port the server runs on
-    "UploadLimitMB" : 512, // Size limit in Megabytes for a single file upload to the server
-    "UseVirusTotal" : true, // Whether to use VirusTotal 
-    "UploadVirusTotal" : true, // Whether to upload the sample to VirusTotal if its unique
-    "VirusTotalApiKey" : "lol", // VirusTotal user API key (needed if UseVirusTotal is true)
-    "ScanOutputDir" : "scans/", // Directory to store downloaded VirusTotal scans in 
-    "UploadsDir" : "uploads/", // Directory to store files uploaded to the server
-    "UploadLog" : "uploads.json" // File for logging upload and scan/analysis information
-}
+```bash
+go install github.com/morgenm/basicgopot/cmd/basicgopot@latest
 ```
-
-If `UploadVirusTotal` is false, but `UseVirusTotal` is true, the uploaded samples' hashes will be checked against VirusTotal, but they will not be uploaded. Note: `UseVirusTotal` has precedence over `UploadVirusTotal`, so if `UseVirusTotal` is false and `UploadVirusTotal` is true, `UploadVirusTotal` will be ignored. If `ScanOutputDir` is set to equal `""` (empty string), VirusTotal scan data will not be saved. Additionally, if `UploadLog` is `""`, no upload and scan/analysis information will be logged to a file, and `UploadsDir` can be empty to signify no saving of uploaded files.
-
-## Running the tool
-
-You can grab the latest release for this project from GitHub and just run the executable after creating the config file as described above. You can also get and run the Docker image, build the docker image locally, or build the project locally. All of these are described below.
 
 ### Docker image
 
@@ -62,10 +47,45 @@ The docker image will be tagged as `basicgopot`.
 
 ### Building Locally
 
-If you wish to build, you can execute: `make`. This will output the executable file `basicgopot` on Linux or Mac, and `basicgopot.exe` on Windows
+If you wish to build, you can: 
+```bash
+git clone https://github.com/morgenm/basicgopot
+make
+```
+This will output the executable file `basicgopot` on Linux or Mac, and `basicgopot.exe` on Windows
+
+## Configuration
+The configuration for **_basicgopot_** is stored in `config/config.json`. An example config file is provided in `config/config.json.example`. You will need to rename `config/config.json.example` to `config/config.json` and fill in the configuration variables as you see fit. The configuration options are:
+```json
+{
+    "ServerPort" : 8080, // The port the server runs on
+    "UploadLimitMB" : 512, // Size limit in Megabytes for a single file upload to the server
+    "UseVirusTotal" : true, // Whether to use VirusTotal 
+    "UploadVirusTotal" : true, // Whether to upload the sample to VirusTotal if its unique
+    "VirusTotalApiKey" : "lol", // VirusTotal user API key (needed if UseVirusTotal is true)
+    "ScanOutputDir" : "scans/", // Directory to store downloaded VirusTotal scans in 
+    "UploadsDir" : "uploads/", // Directory to store files uploaded to the server
+    "UploadLog" : "uploads.json", // File for logging upload and scan/analysis information
+    "WebHookDir" : "webhooks/", // Directory to save WebHook responses
+    "UploadWebHooks" : { // WebHook definitions
+        "Flask" : {
+            "URL" : "http://localhost:5000",
+            "Method" : "POST",
+            "Headers" : "Authorization: Bearer",
+            "Data" : "$FILE"
+        }  
+    }
+}
+```
+
+If `UploadVirusTotal` is false, but `UseVirusTotal` is true, the uploaded samples' hashes will be checked against VirusTotal, but they will not be uploaded. Note: `UseVirusTotal` has precedence over `UploadVirusTotal`, so if `UseVirusTotal` is false and `UploadVirusTotal` is true, `UploadVirusTotal` will be ignored. 
+`ScanOutputDir`, `UploadsDir`, `UploadLog`, and `WebHookDir` can all be left empty (`""`) if you don't want to save scans, save the uploaded files, log them to the upload log file, or save WebHook responses, respectively.
+
+UploadWebHooks are WebHooks that will execute every time a file is uploaded to the server. You can use this to send the file to other servers, such as sending the file to a **Cuckoo** server to queue it for analysis. Right now, only `POST` requests are supported. The `Data` variable defines what data is sent to the given URL. This can be any string, and any instance of `$FILE` in the data string will be replaced with the entire data of the uploaded file. All WebHooks must have a unique name; the WebHook in this example is titled `Flask`. If you don't want to use any WebHooks, you can set `"UploadWebHooks" : {}`.
+
 
 ## VirusTotal
-Once a file is uploaded to the honeypot, it will be written to the "uploads" folder, checked against VirusTotal, and uploaded to VirusTotal if it is unique, as mentioned above. The log file will state that a file is uploaded, its hash will be listed, and some basic information about the VirusTotal upload will be outputted. 
+**_basicgopot_** can be configured to either check the hashes of uploaded files against **VirusTotal**, upload the files to **VirusTotal**, or both. The results of the scans can be saved to a chosen directory.
 
 ![Sample log output](https://github.com/morgenm/basicgopot/blob/assets/docs/log.png?raw=true "Sample log output")
 

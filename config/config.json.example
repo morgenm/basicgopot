@@ -1,10 +1,19 @@
 {
-    "ServerPort" : 8080,
-    "UploadLimitMB" : 512,
-    "UseVirusTotal" : true,
-    "UploadVirusTotal" : true,
-    "VirusTotalApiKey" : "lol",
-    "ScanOutputDir" : "scans/",
-    "UploadsDir" : "uploads/",
-    "UploadLog" : "uploads.json"
+    "ServerPort" : 8080, // The port the server runs on
+    "UploadLimitMB" : 512, // Size limit in Megabytes for a single file upload to the server
+    "UseVirusTotal" : true, // Whether to use VirusTotal 
+    "UploadVirusTotal" : true, // Whether to upload the sample to VirusTotal if its unique
+    "VirusTotalApiKey" : "lol", // VirusTotal user API key (needed if UseVirusTotal is true)
+    "ScanOutputDir" : "scans/", // Directory to store downloaded VirusTotal scans in 
+    "UploadsDir" : "uploads/", // Directory to store files uploaded to the server
+    "UploadLog" : "uploads.json", // File for logging upload and scan/analysis information
+    "WebHookDir" : "webhooks/", // Directory to save WebHook responses
+    "UploadWebHooks" : { // WebHook definitions
+        "Flask" : {
+            "URL" : "http://localhost:5000",
+            "Method" : "POST",
+            "Headers" : "Authorization: Bearer",
+            "Data" : "$FILE"
+        }  
+    }
 }
