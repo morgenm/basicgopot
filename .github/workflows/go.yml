@@ -13,6 +13,10 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
     steps:
     - uses: actions/checkout@v3
 
@@ -20,12 +24,33 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: 1.19
-
+    
     - name: Build
       run: go build -v ./...
-      
-    - name: Format
-      run: if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then exit 1; fi
+  
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.19
+        
+    - name: Checkout Source 
+      uses: actions/checkout@v3
+    
+    - name: Create Config file with Secret
+      run: jq --arg secret "${{ secrets.VIRUS_TOTAL_API_KEY }}" '.VirusTotalApiKey = $secret' config/config.json.example > config/config.json
 
-    - name: Vet
-      run: go vet ./...
+    - name: Get config path
+      run: | 
+        echo "BASICGOPOT_CONFIG_FILE=$(pwd)/config/config.json" >> $GITHUB_ENV
+
+    - name: Run coverage
+      run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+      
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+      

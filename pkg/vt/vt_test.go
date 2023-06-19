@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"math/rand"
+	"os"
 	"testing"
 	"time"
 
@@ -15,11 +16,18 @@ import (
 
 // Test CheckHashVirusTotal using a file hash already on VT.
 func TestCheckHashVirusTotalKnownHash(t *testing.T) {
-	// Quite ugly, but using config.json from top level dir so we
-	// have access to the legitimate API key
-	cfg, err := config.ReadConfigFromFile("../../config/config.json")
+	configPath := os.Getenv("BASICGOPOT_CONFIG_FILE")
+
+	if configPath == "" {
+		// Quite ugly, but using config.json from top level dir so we
+		// have access to the legitimate API key
+		configPath = "../../config/config.json"
+	}
+
+	cfg, err := config.ReadConfigFromFile(configPath)
 	if err != nil {
-		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		pwd, _ := os.Getwd()
+		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
 
 	// Define simple file already present on VT
@@ -33,11 +41,18 @@ func TestCheckHashVirusTotalKnownHash(t *testing.T) {
 
 // Test CheckHashVirusTotal with a randomly generated file, not on VT.
 func TestCheckHashVirusTotalRandomFile(t *testing.T) {
-	// Quite ugly, but using config.json from top level dir so we
-	// have access to the legitimate API key
-	cfg, err := config.ReadConfigFromFile("../../config/config.json")
+	configPath := os.Getenv("BASICGOPOT_CONFIG_FILE")
+
+	if configPath == "" {
+		// Quite ugly, but using config.json from top level dir so we
+		// have access to the legitimate API key
+		configPath = "../../config/config.json"
+	}
+
+	cfg, err := config.ReadConfigFromFile(configPath)
 	if err != nil {
-		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		pwd, _ := os.Getwd()
+		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
 
 	// Generate random bytes to act as our file
@@ -65,11 +80,18 @@ func TestCheckHashVirusTotalRandomFile(t *testing.T) {
 
 // Test UploadFileVirusTotal with a randomly generated file, not on VT.
 func TestUploadFileVirusTotalRandomFile(t *testing.T) {
-	// Quite ugly, but using config.json from top level dir so we
-	// have access to the legitimate API key
-	cfg, err := config.ReadConfigFromFile("../../config/config.json")
+	configPath := os.Getenv("BASICGOPOT_CONFIG_FILE")
+
+	if configPath == "" {
+		// Quite ugly, but using config.json from top level dir so we
+		// have access to the legitimate API key
+		configPath = "../../config/config.json"
+	}
+
+	cfg, err := config.ReadConfigFromFile(configPath)
 	if err != nil {
-		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		pwd, _ := os.Getwd()
+		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
 
 	// Generate random bytes to act as our file
@@ -88,11 +110,18 @@ func TestUploadFileVirusTotalRandomFile(t *testing.T) {
 
 // Test UploadFileVirusTotal with a randomly generated file, not on VT, that is too large to upload.
 func TestUploadFileVirusTotalRandomFileTooBig(t *testing.T) {
-	// Quite ugly, but using config.json from top level dir so we
-	// have access to the legitimate API key
-	cfg, err := config.ReadConfigFromFile("../../config/config.json")
+	configPath := os.Getenv("BASICGOPOT_CONFIG_FILE")
+
+	if configPath == "" {
+		// Quite ugly, but using config.json from top level dir so we
+		// have access to the legitimate API key
+		configPath = "../../config/config.json"
+	}
+
+	cfg, err := config.ReadConfigFromFile(configPath)
 	if err != nil {
-		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		pwd, _ := os.Getwd()
+		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
 
 	// Generate random bytes to act as our file
@@ -111,11 +140,18 @@ func TestUploadFileVirusTotalRandomFileTooBig(t *testing.T) {
 
 // Fuzz UploadFileVirusTotal.
 func FuzzUploadFileVirusTotal(f *testing.F) {
-	// Quite ugly, but using config.json from top level dir so we
-	// have access to the legitimate API key
-	cfg, err := config.ReadConfigFromFile("../../config/config.json")
+	configPath := os.Getenv("BASICGOPOT_CONFIG_FILE")
+
+	if configPath == "" {
+		// Quite ugly, but using config.json from top level dir so we
+		// have access to the legitimate API key
+		configPath = "../../config/config.json"
+	}
+
+	cfg, err := config.ReadConfigFromFile(configPath)
 	if err != nil {
-		f.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		pwd, _ := os.Getwd()
+		f.Fatalf(`checkVirusTotal with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
 
 	f.Add("KEY", []byte{1, 2, 3, 4, 5, 6, 7})

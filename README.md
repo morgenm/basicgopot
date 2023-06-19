@@ -9,6 +9,7 @@
 [![Docs](https://pkg.go.dev/badge/github.com/morgenm/basicgopot)](https://pkg.go.dev/github.com/morgenm/basicgopot)
 [![GitHub Downloads](https://img.shields.io/github/downloads/morgenm/basicgopot/total)](https://github.com/morgenm/basicgopot/releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/morgenm/basicgopot)](https://hub.docker.com/r/morgenm/basicgopot/)
+[![codecov](https://codecov.io/gh/morgenm/basicgopot/branch/main/graph/badge.svg?token=R2LE7BBNJQ)](https://codecov.io/gh/morgenm/basicgopot)
 
 ## About
 Customizable HTTP honeypot which saves and logs all files uploaded to it. It can check file hashes against VirusTotal, upload files to VirusTotal, and save VirusTotal scan results. Configurable WebHooks let you easily customize what the server does once a file is uploaded. You can use any **HTML** and **CSS** to make the server look how you want it.
