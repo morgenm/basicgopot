@@ -15,8 +15,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/morgenm/basicgopot/internal/config"
 	"github.com/morgenm/basicgopot/internal/server"
+	"github.com/morgenm/basicgopot/pkg/config"
 )
 
 // Main reads the config, creates upload and scan dirs if configured to, and runs the server.

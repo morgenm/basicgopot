@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/morgenm/basicgopot/internal/config"
+	"github.com/morgenm/basicgopot/pkg/config"
 )
 
 type FileUploadHandler struct {
