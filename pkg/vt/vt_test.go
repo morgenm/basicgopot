@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"math/rand"
+	"os"
 	"testing"
 	"time"
 
@@ -21,7 +22,11 @@ func TestCheckHashVirusTotalKnownHash(t *testing.T) {
 	if err != nil {
 		cfg, err = config.ReadConfigFromFile("config/config.json")
 		if err != nil {
-			t.Fatalf(`checkVirusTotal with known hash, failed to read config file!: %v`, err)
+			pwd, err := os.Getwd()
+			if err != nil {
+				t.Fatalf(`Error getting cwd.`)
+			}
+			t.Fatalf(`checkVirusTotal with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 		}
 	}
 
