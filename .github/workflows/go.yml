@@ -14,7 +14,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     defaults:
-      shell: bash
+      run:
+        shell: bash
 
     steps:
     - uses: actions/checkout@v3
