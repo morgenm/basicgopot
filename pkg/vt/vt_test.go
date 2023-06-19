@@ -22,7 +22,6 @@ func TestCheckHashVirusTotalKnownHash(t *testing.T) {
 		// Quite ugly, but using config.json from top level dir so we
 		// have access to the legitimate API key
 		configPath = "../../config/config.json"
-
 	}
 
 	cfg, err := config.ReadConfigFromFile(configPath)
