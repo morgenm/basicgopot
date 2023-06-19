@@ -28,7 +28,7 @@ func main() {
 		return
 	}
 
-	// Create upload directory, if specified
+	// Create upload directory, if specified.
 	if cfg.UploadsDir != "" {
 		if _, err := os.Stat(cfg.UploadsDir); os.IsNotExist(err) {
 			if err := os.Mkdir(cfg.UploadsDir, 0o750); err != nil {
@@ -38,7 +38,7 @@ func main() {
 		}
 	}
 
-	// Create scans directory
+	// Create scans directory.
 	if cfg.ScanOutputDir != "" {
 		if _, err := os.Stat(cfg.ScanOutputDir); os.IsNotExist(err) {
 			if err := os.Mkdir(cfg.ScanOutputDir, 0o750); err != nil {
@@ -48,6 +48,16 @@ func main() {
 		}
 	}
 
-	// Start the server
+	// Create webhooks directory.
+	if cfg.WebHookDir != "" {
+		if _, err := os.Stat(cfg.WebHookDir); os.IsNotExist(err) {
+			if err := os.Mkdir(cfg.WebHookDir, 0o750); err != nil {
+				log.Print("Fatal error: Could not create webhooks directory and it does not already exist!")
+				return
+			}
+		}
+	}
+
+	// Start the server.
 	server.RunServer(cfg)
 }

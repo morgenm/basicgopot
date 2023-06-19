@@ -8,15 +8,24 @@ import (
 	"path/filepath"
 )
 
+type WebHookConfig struct {
+	URL     string // URL that the request will be made to.
+	Method  string // HTTP method for the request.
+	Headers string // HTTP headers for the request.
+	Data    string // Data to be sent in the request if it has method POST.
+}
+
 type Config struct {
 	ServerPort       int
-	UploadLimitMB    int64 // Upload file size limit in Megabytes.
-	UseVirusTotal    bool  // Whether or not to use VT.
-	UploadVirusTotal bool  // Whether to upload to VT.
-	VirusTotalApiKey string
-	ScanOutputDir    string // Directory to output VT scans, leave empty if no output scans are wanted.
-	UploadsDir       string // Directory to output all files uploaded to server, leave empty if you don't want to save any uploads.
-	UploadLog        string // JSON file to output log detailing upload file data.
+	UploadLimitMB    int64           // Upload file size limit in Megabytes.
+	UseVirusTotal    bool            // Whether or not to use VT.
+	UploadVirusTotal bool            // Whether to upload to VT.
+	VirusTotalApiKey string          // VirusTotal API key for checking hashes and uploading files
+	ScanOutputDir    string          // Directory to output VT scans, leave empty if no output scans are wanted.
+	UploadsDir       string          // Directory to output all files uploaded to server, leave empty if you don't want to save any uploads.
+	UploadLog        string          // JSON file to output log detailing upload file data.
+	WebHookDir       string          // Directory to save results from WebHook requests.
+	UploadWebHooks   []WebHookConfig // User-defined WebHooks.
 }
 
 // loadConfig takes a slice of bytes and outputs the config that is read from those (*Config, nil) on success,

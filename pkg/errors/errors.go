@@ -27,6 +27,12 @@ type (
 	// An UploadNotInLog error indicates that a file not present in the log
 	// was accessed.
 	UploadNotInLog struct{}
+	// An WebHookInvalidMethod error indicates that a WebHook attempted to execute with
+	// an invalid method type.
+	WebHookInvalidMethod struct{}
+	// An WebHookBadResponse error indicates that a WebHook did not receive a status code
+	// 200 on execution.
+	WebHookBadResponse struct{}
 )
 
 func (e *InvalidConfig) Error() string {
@@ -59,4 +65,12 @@ func (e *UploadAlreadyInLog) Error() string {
 
 func (e *UploadNotInLog) Error() string {
 	return "This filepath does not exist in the log!"
+}
+
+func (e *WebHookInvalidMethod) Error() string {
+	return "An invalid method was used in a request!"
+}
+
+func (e *WebHookBadResponse) Error() string {
+	return "A WebHook got a bad response!"
 }
