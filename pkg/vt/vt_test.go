@@ -7,15 +7,17 @@ import (
 	"testing"
 	"time"
 
+	goerrors "errors"
+
 	"github.com/morgenm/basicgopot/internal/config"
 	"github.com/morgenm/basicgopot/pkg/errors"
 )
 
 // Test CheckHashVirusTotal using a file hash already on VT.
-func TestCheckVirusTotalKnownHash(t *testing.T) {
+func TestCheckHashVirusTotalKnownHash(t *testing.T) {
 	// Quite ugly, but using config.json from top level dir so we
 	// have access to the legitimate API key
-	cfg, err := config.ReadConfig("../../config/config.json")
+	cfg, err := config.ReadConfigFromFile("../../config/config.json")
 	if err != nil {
 		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
 	}
@@ -25,9 +27,7 @@ func TestCheckVirusTotalKnownHash(t *testing.T) {
 
 	reader, err := CheckHashVirusTotal(cfg.VirusTotalApiKey, hash)
 	if err != nil {
-		t.Fatalf(`TestCheckVirusTotalKnownHash = nil, %v, want io.ReadCloser, nil`, err)
-	} else if reader == nil && err == nil {
-		t.Fatalf(`TestCheckVirusTotalKnownHash = nil, nil, want io.ReadCloser, nil`)
+		t.Fatalf(`TestCheckVirusTotalKnownHash = %v, %v, want io.ReadCloser, nil`, reader, err)
 	}
 }
 
@@ -35,7 +35,7 @@ func TestCheckVirusTotalKnownHash(t *testing.T) {
 func TestCheckHashVirusTotalRandomFile(t *testing.T) {
 	// Quite ugly, but using config.json from top level dir so we
 	// have access to the legitimate API key
-	cfg, err := config.ReadConfig("../../config/config.json")
+	cfg, err := config.ReadConfigFromFile("../../config/config.json")
 	if err != nil {
 		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
 	}
@@ -57,10 +57,9 @@ func TestCheckHashVirusTotalRandomFile(t *testing.T) {
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
 	reader, err := CheckHashVirusTotal(cfg.VirusTotalApiKey, hash)
-	if err != nil {
-		t.Fatalf(`TestCheckHashVirusTotalRandomFile = nil, %v, want nil, nil`, err)
-	} else if reader != nil {
-		t.Fatalf(`TestCheckHashVirusTotalRandomFile = %v, nil, want nil, nil`, reader)
+	errHashNotFound := &errors.VirusTotalHashNotFound{}
+	if err != nil && !goerrors.As(err, &errHashNotFound) {
+		t.Fatalf(`TestCheckHashVirusTotalRandomFile = %v, %v, want nil, %v`, reader, err, errHashNotFound)
 	}
 }
 
@@ -68,7 +67,7 @@ func TestCheckHashVirusTotalRandomFile(t *testing.T) {
 func TestUploadFileVirusTotalRandomFile(t *testing.T) {
 	// Quite ugly, but using config.json from top level dir so we
 	// have access to the legitimate API key
-	cfg, err := config.ReadConfig("../../config/config.json")
+	cfg, err := config.ReadConfigFromFile("../../config/config.json")
 	if err != nil {
 		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
 	}
@@ -81,15 +80,7 @@ func TestUploadFileVirusTotalRandomFile(t *testing.T) {
 		data[i] = byte(r.Intn(255 + 1))
 	}
 
-	// Get the hash to pass to VT
-	hasher := sha256.New()
-	_, err = hasher.Write(data)
-	if err != nil {
-		t.Fatalf(`checkVirusTotal test with random file failed when generating random file with error %v`, err)
-	}
-	hash := fmt.Sprintf("%x", hasher.Sum(nil))
-
-	_, err = UploadFileVirusTotal(cfg.VirusTotalApiKey, hash, fileSize/(1024*1024), "random.test", data)
+	_, err = UploadFileVirusTotal(cfg.VirusTotalApiKey, "random.test", data)
 	if err != nil {
 		t.Fatalf(`TestUploadFileVirusTotalRandomFile = nil, %v, want io.ReadCloser, nil`, err)
 	}
@@ -99,7 +90,7 @@ func TestUploadFileVirusTotalRandomFile(t *testing.T) {
 func TestUploadFileVirusTotalRandomFileTooBig(t *testing.T) {
 	// Quite ugly, but using config.json from top level dir so we
 	// have access to the legitimate API key
-	cfg, err := config.ReadConfig("../../config/config.json")
+	cfg, err := config.ReadConfigFromFile("../../config/config.json")
 	if err != nil {
 		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
 	}
@@ -112,16 +103,30 @@ func TestUploadFileVirusTotalRandomFileTooBig(t *testing.T) {
 		data[i] = byte(r.Intn(255 + 1))
 	}
 
-	// Get the hash to pass to VT
-	hasher := sha256.New()
-	_, err = hasher.Write(data)
-	if err != nil {
-		t.Fatalf(`checkVirusTotal test with too big random file failed when generating random file with error %v`, err)
-	}
-	hash := fmt.Sprintf("%x", hasher.Sum(nil))
-
-	_, err = UploadFileVirusTotal(cfg.VirusTotalApiKey, hash, fileSize/(1024*1024), "random.test", data)
+	_, err = UploadFileVirusTotal(cfg.VirusTotalApiKey, "random.test", data)
 	if err == nil {
 		t.Fatalf(`TestUploadFileVirusTotalRandomFileTooBig = nil, nil, want nil, %v`, &errors.FileTooBig{})
 	}
+}
+
+// Fuzz UploadFileVirusTotal.
+func FuzzUploadFileVirusTotal(f *testing.F) {
+	// Quite ugly, but using config.json from top level dir so we
+	// have access to the legitimate API key
+	cfg, err := config.ReadConfigFromFile("../../config/config.json")
+	if err != nil {
+		f.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+	}
+
+	f.Add("KEY", []byte{1, 2, 3, 4, 5, 6, 7})
+	f.Fuzz(func(t *testing.T, fileName string, data []byte) {
+		fileSize := len(data) / (1024 * 1024)
+		reader, err := UploadFileVirusTotal(cfg.VirusTotalApiKey, fileName, data)
+		errFileTooBig := &errors.FileTooBig{}
+		if (!goerrors.As(err, &errFileTooBig) || reader != nil) && fileSize > 32 {
+			t.Fatalf(`TestCheckVirusTotalFuzz = %v, %v, want nil, FileTooBig`, reader, err)
+		} else if reader == nil || err != nil {
+			t.Fatalf(`TestCheckVirusTotalFuzz = %v, %v, want reader, nil`, reader, err)
+		}
+	})
 }

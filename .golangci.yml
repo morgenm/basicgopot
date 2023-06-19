@@ -2,6 +2,10 @@ linters:
   enable:
     - gocyclo
     - gofumpt
+    - godot
+    - nilnil
+    - predeclared
+    - unconvert
 
 linter-settings:
   go-cyclo:

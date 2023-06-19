@@ -71,7 +71,7 @@ func (uploadLog *UploadLog) UpdateFile(uploadPath string, originalFilename strin
 	return nil
 }
 
-// Update the scan path and type of an already existing entry
+// Update the scan path and type of an already existing entry.
 func (uploadLog *UploadLog) UpdateFileScan(uploadPath string, newScanPath string, newScanType string) error {
 	uploadLog.mutx.Lock()
 	defer uploadLog.mutx.Unlock()
@@ -85,7 +85,7 @@ func (uploadLog *UploadLog) UpdateFileScan(uploadPath string, newScanPath string
 	return nil
 }
 
-// Save to file
+// Save to file.
 func (uploadLog *UploadLog) SaveFile() error {
 	uploadLog.mutx.Lock()
 	defer uploadLog.mutx.Unlock()
@@ -119,7 +119,7 @@ func (uploadLog *UploadLog) SaveFile() error {
 	return nil
 }
 
-// Loop and save file every so many seconds
+// Loop and save file every so many seconds.
 func (uploadLog *UploadLog) SaveFileLoop() error {
 	for !uploadLog.quitSavingLoop {
 		if err := uploadLog.SaveFile(); err != nil {
@@ -132,8 +132,16 @@ func (uploadLog *UploadLog) SaveFileLoop() error {
 	return nil
 }
 
-// Load uploadlog from file
-func (uploadLog *UploadLog) LoadFromFile() error {
+// loadFromBytes will load an upload log from given bytes. Returns nil on success, error on failure.
+func (uploadLog *UploadLog) loadFromBytes(data []byte) error {
+	if err := json.Unmarshal(data, &uploadLog.uploads); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Load will load the upload log from the file specified in uploadLog.logPath. Returns nil on success, error on failure.
+func (uploadLog *UploadLog) Load() error {
 	if uploadLog.logPath == "" { // No log file
 		return nil
 	}
@@ -159,10 +167,5 @@ func (uploadLog *UploadLog) LoadFromFile() error {
 		return err
 	}
 
-	// Create the upload map from the file
-	if err = json.Unmarshal(data, &uploadLog.uploads); err != nil {
-		return err
-	}
-
-	return nil
+	return uploadLog.loadFromBytes(data)
 }
