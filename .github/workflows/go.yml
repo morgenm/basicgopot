@@ -24,7 +24,7 @@ jobs:
     - name: Run coverage
       run: |
         cp config/config.json.example config/config.json
-        jq '.VirusTotalApiKey = "VT KEY"' config/config.json > config/config.json
+        jq '.VirusTotalApiKey = "{{ secrets.VIRUS_TOTAL_API_KEY }}"' config/config.json > config/config.json
         jq '.UploadWebHooks = ""' config/config.json > config/config.json
         go test -race -coverprofile=coverage.out -covermode=atomic ./...
       
