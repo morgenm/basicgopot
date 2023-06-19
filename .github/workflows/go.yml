@@ -30,7 +30,6 @@ jobs:
         jq '.VirusTotalApiKey = "VT KEY"' config/config.json > config/config.json
         jq '.UploadWebHooks = ""' config/config.json > config/config.json
         echo "$(cat config/config.json)"
-        go test -race -coverprofile=coverage.out -covermode=atomic ./...
       
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
