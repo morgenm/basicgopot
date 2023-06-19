@@ -27,9 +27,7 @@ func TestCheckHashVirusTotalKnownHash(t *testing.T) {
 
 	reader, err := CheckHashVirusTotal(cfg.VirusTotalApiKey, hash)
 	if err != nil {
-		t.Fatalf(`TestCheckVirusTotalKnownHash = nil, %v, want io.ReadCloser, nil`, err)
-	} else if reader == nil && err == nil {
-		t.Fatalf(`TestCheckVirusTotalKnownHash = nil, nil, want io.ReadCloser, nil`)
+		t.Fatalf(`TestCheckVirusTotalKnownHash = %v, %v, want io.ReadCloser, nil`, reader, err)
 	}
 }
 
@@ -59,10 +57,9 @@ func TestCheckHashVirusTotalRandomFile(t *testing.T) {
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
 	reader, err := CheckHashVirusTotal(cfg.VirusTotalApiKey, hash)
-	if err != nil {
-		t.Fatalf(`TestCheckHashVirusTotalRandomFile = nil, %v, want nil, nil`, err)
-	} else if reader != nil {
-		t.Fatalf(`TestCheckHashVirusTotalRandomFile = %v, nil, want nil, nil`, reader)
+	errHashNotFound := &errors.VirusTotalHashNotFound{}
+	if err != nil && !goerrors.As(err, &errHashNotFound) {
+		t.Fatalf(`TestCheckHashVirusTotalRandomFile = %v, %v, want nil, %v`, reader, err, errHashNotFound)
 	}
 }
 

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
+	goerrors "errors"
+
 	"github.com/morgenm/basicgopot/internal/config"
 	"github.com/morgenm/basicgopot/pkg/errors"
 	"github.com/morgenm/basicgopot/pkg/vt"
@@ -47,10 +49,11 @@ func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, uploadFilepath st
 	// Check if on VirusTotal
 	log.Print("Checking hash against VirusTotal...")
 	scanFilepath := filepath.Join(cfg.ScanOutputDir, filepath.Clean(time.Now().Format(time.UnixDate)+".json"))
+	errHashNotFound := &errors.VirusTotalHashNotFound{}
 	reader, err := vt.CheckHashVirusTotal(cfg.VirusTotalApiKey, hash)
-	if err != nil {
+	if err != nil && !goerrors.As(err, &errHashNotFound) {
 		return err
-	} else if reader != nil {
+	} else if err == nil {
 		if cfg.ScanOutputDir == "" { // We are done here if we are not outputting scans to file
 			return nil
 		}

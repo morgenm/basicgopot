@@ -3,6 +3,7 @@ linters:
     - gocyclo
     - gofumpt
     - godot
+    - nilnil
 
 linter-settings:
   go-cyclo:

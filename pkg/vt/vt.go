@@ -44,7 +44,7 @@ func CheckHashVirusTotal(apiKey string, hash string) (*io.ReadCloser, error) {
 	if resp.StatusCode == 401 {
 		return nil, &errors.VirusTotalAPIKeyError{}
 	} else if resp.StatusCode == 404 { // Hash not present
-		return nil, nil
+		return nil, &errors.VirusTotalHashNotFound{}
 	}
 
 	return &resp.Body, nil

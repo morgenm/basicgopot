@@ -8,6 +8,9 @@ type (
 	// A VirusTotalAPIKeyError is an error indicating that VirusTotal did
 	// not accept the API key provided in the config.
 	VirusTotalAPIKeyError struct{}
+	// A VirusTotalHashNotFound is an error indicating that the given hash
+	// is not present in VirusTotal.
+	VirusTotalHashNotFound struct{}
 	// A VirusTotalAnalysisNotFound is an error indicating that there was
 	// an error getting the analysis from VirusTotal after uploading a sample.
 	VirusTotalAnalysisNotFound struct{}
@@ -32,6 +35,10 @@ func (e *InvalidConfig) Error() string {
 
 func (e *VirusTotalAPIKeyError) Error() string {
 	return "VirusTotal authentication failure! Validate your API key in the config/config.json file!"
+}
+
+func (e *VirusTotalHashNotFound) Error() string {
+	return "The given hash is not present in VirusTotal!"
 }
 
 func (e *VirusTotalAnalysisNotFound) Error() string {
