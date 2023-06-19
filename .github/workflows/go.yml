@@ -28,7 +28,7 @@ jobs:
       run: |
         cp config/config.json.example config/config.json
         jq '.VirusTotalApiKey = "${{ secrets.TEST_SECRET }}"' config/config.json
-        echo $(cat config/*)
+        echo "$(cat config/config.json.example)""
       
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
