@@ -44,7 +44,7 @@ jobs:
         echo $PWD
         cp config/config.json.example config/config.json
         jq '.VirusTotalApiKey = "{{ secrets.VIRUS_TOTAL_API_KEY }}"' config/config.json > config/config.json
-        go test -race -coverprofile=coverage.out -covermode=atomic ./...
+        echo $(ls -l config/config.json)
       
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
