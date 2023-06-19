@@ -1,4 +1,4 @@
-// Code for handling JSON config file
+// The config package contains code for loading basicgopot configuration.
 package config
 
 import (
@@ -10,13 +10,13 @@ import (
 
 type Config struct {
 	ServerPort       int
-	UploadLimitMB    int64 // Upload file size limit in Megabytes
-	UseVirusTotal    bool  // Whether or not to use VT
-	UploadVirusTotal bool  // Whether to upload to VT
+	UploadLimitMB    int64 // Upload file size limit in Megabytes.
+	UseVirusTotal    bool  // Whether or not to use VT.
+	UploadVirusTotal bool  // Whether to upload to VT.
 	VirusTotalApiKey string
-	ScanOutputDir    string // Directory to output VT scans, leave empty if no output scans are wanted
-	UploadsDir       string // Directory to output all files uploaded to server, leave empty if you don't want to save any uploads
-	UploadLog        string // JSON file to output log detailing upload file data
+	ScanOutputDir    string // Directory to output VT scans, leave empty if no output scans are wanted.
+	UploadsDir       string // Directory to output all files uploaded to server, leave empty if you don't want to save any uploads.
+	UploadLog        string // JSON file to output log detailing upload file data.
 }
 
 // loadConfig takes a slice of bytes and outputs the config that is read from those (*Config, nil) on success,
