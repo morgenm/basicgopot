@@ -19,7 +19,10 @@ func TestCheckHashVirusTotalKnownHash(t *testing.T) {
 	// have access to the legitimate API key
 	cfg, err := config.ReadConfigFromFile("../../config/config.json")
 	if err != nil {
-		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		cfg, err = config.ReadConfigFromFile("config/config.json")
+		if err != nil {
+			t.Fatalf(`checkVirusTotal with known hash, failed to read config file!: %v`, err)
+		}
 	}
 
 	// Define simple file already present on VT
@@ -37,7 +40,10 @@ func TestCheckHashVirusTotalRandomFile(t *testing.T) {
 	// have access to the legitimate API key
 	cfg, err := config.ReadConfigFromFile("../../config/config.json")
 	if err != nil {
-		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		cfg, err = config.ReadConfigFromFile("config/config.json")
+		if err != nil {
+			t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		}
 	}
 
 	// Generate random bytes to act as our file
@@ -69,7 +75,10 @@ func TestUploadFileVirusTotalRandomFile(t *testing.T) {
 	// have access to the legitimate API key
 	cfg, err := config.ReadConfigFromFile("../../config/config.json")
 	if err != nil {
-		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		cfg, err = config.ReadConfigFromFile("config/config.json")
+		if err != nil {
+			t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		}
 	}
 
 	// Generate random bytes to act as our file
@@ -92,7 +101,10 @@ func TestUploadFileVirusTotalRandomFileTooBig(t *testing.T) {
 	// have access to the legitimate API key
 	cfg, err := config.ReadConfigFromFile("../../config/config.json")
 	if err != nil {
-		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		cfg, err = config.ReadConfigFromFile("config/config.json")
+		if err != nil {
+			t.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		}
 	}
 
 	// Generate random bytes to act as our file
@@ -115,7 +127,10 @@ func FuzzUploadFileVirusTotal(f *testing.F) {
 	// have access to the legitimate API key
 	cfg, err := config.ReadConfigFromFile("../../config/config.json")
 	if err != nil {
-		f.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		cfg, err = config.ReadConfigFromFile("config/config.json")
+		if err != nil {
+			f.Fatalf(`checkVirusTotal with known hash, failed to read config file!`)
+		}
 	}
 
 	f.Add("KEY", []byte{1, 2, 3, 4, 5, 6, 7})
