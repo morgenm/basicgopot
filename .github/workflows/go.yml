@@ -44,7 +44,10 @@ jobs:
         cp config/config.json.example config/config.json
         jq '.VirusTotalApiKey = "TESTAPI"' config/config.json > config/config.json
 
-    - name: Cat file
+    - name: Cat old file
+      run cat config/config.json.example
+
+    - name: Cat new file
       run: cat config/config.json
 
     - name: Get config path
