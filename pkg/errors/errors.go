@@ -3,7 +3,7 @@ package errors
 
 type (
 	// An InvalidConfig error is an error indicating that the config file
-	// being loaded has invalid data
+	// being loaded has invalid data.
 	InvalidConfig struct{}
 	// A VirusTotalAPIKeyError is an error indicating that VirusTotal did
 	// not accept the API key provided in the config.

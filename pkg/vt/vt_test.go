@@ -112,7 +112,7 @@ func TestUploadFileVirusTotalRandomFileTooBig(t *testing.T) {
 	}
 }
 
-// Fuzz UploadFileVirusTotal
+// Fuzz UploadFileVirusTotal.
 func FuzzUploadFileVirusTotal(f *testing.F) {
 	// Quite ugly, but using config.json from top level dir so we
 	// have access to the legitimate API key

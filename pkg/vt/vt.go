@@ -13,14 +13,14 @@ import (
 	"github.com/morgenm/basicgopot/pkg/errors"
 )
 
-// isValidSha256 checks if a given string is a hash in sha256 format
+// isValidSha256 checks if a given string is a hash in sha256 format.
 func isValidSha256(hash string) bool {
 	regex := regexp.MustCompile("^[a-fA-F0-9]{64}$")
 	return regex.MatchString(hash)
 }
 
 // CheckHashVirusTotal will send a file hash to VirusTotal and return the scan output as (*io.ReadCloser, nil) if the file
-// has already been uploaded to VirusTotal. Will return (nil, error) on failure
+// has already been uploaded to VirusTotal. Will return (nil, error) on failure.
 func CheckHashVirusTotal(apiKey string, hash string) (*io.ReadCloser, error) {
 	if !isValidSha256(hash) {
 		return nil, &errors.InvalidHashError{}

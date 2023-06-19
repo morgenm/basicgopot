@@ -71,7 +71,7 @@ func (uploadLog *UploadLog) UpdateFile(uploadPath string, originalFilename strin
 	return nil
 }
 
-// Update the scan path and type of an already existing entry
+// Update the scan path and type of an already existing entry.
 func (uploadLog *UploadLog) UpdateFileScan(uploadPath string, newScanPath string, newScanType string) error {
 	uploadLog.mutx.Lock()
 	defer uploadLog.mutx.Unlock()
@@ -85,7 +85,7 @@ func (uploadLog *UploadLog) UpdateFileScan(uploadPath string, newScanPath string
 	return nil
 }
 
-// Save to file
+// Save to file.
 func (uploadLog *UploadLog) SaveFile() error {
 	uploadLog.mutx.Lock()
 	defer uploadLog.mutx.Unlock()
@@ -119,7 +119,7 @@ func (uploadLog *UploadLog) SaveFile() error {
 	return nil
 }
 
-// Loop and save file every so many seconds
+// Loop and save file every so many seconds.
 func (uploadLog *UploadLog) SaveFileLoop() error {
 	for !uploadLog.quitSavingLoop {
 		if err := uploadLog.SaveFile(); err != nil {
