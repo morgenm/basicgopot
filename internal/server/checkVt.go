@@ -38,7 +38,7 @@ func writeVTResultToFile(cfg *config.Config, reader io.ReadCloser) error {
 	return nil
 }
 
-func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, uploadFilepath string, hash string, fileSize float64, outFileName string, data []byte) error {
+func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, uploadFilepath string, hash string, outFileName string, data []byte) error {
 	// Check if valid hash
 	if len(hash) != 64 {
 		return &errors.InvalidHashError{}
@@ -70,7 +70,7 @@ func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, uploadFilepath st
 	if !cfg.UploadVirusTotal {
 		return nil
 	}
-	reader, err = vt.UploadFileVirusTotal(cfg.VirusTotalApiKey, hash, fileSize, outFileName, data)
+	reader, err = vt.UploadFileVirusTotal(cfg.VirusTotalApiKey, outFileName, data)
 	if err != nil {
 		return err
 	}

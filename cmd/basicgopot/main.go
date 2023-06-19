@@ -22,7 +22,7 @@ import (
 // Main reads the config, creates upload and scan dirs if configured to, and runs the server.
 func main() {
 	// Load config
-	cfg, err := config.ReadConfig("config/config.json")
+	cfg, err := config.ReadConfigFromFile("config/config.json")
 	if err != nil {
 		log.Print("Error reading config.json!")
 		return

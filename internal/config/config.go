@@ -19,8 +19,22 @@ type Config struct {
 	UploadLog        string // JSON file to output log detailing upload file data
 }
 
-func ReadConfig(filename string) (*Config, error) {
-	f, err := os.Open(filepath.Clean(filename))
+// loadConfig takes a slice of bytes and outputs the config that is read from those (*Config, nil) on success,
+// nil, error on failure.
+func loadConfig(configData []byte) (*Config, error) {
+	var config Config
+
+	err := json.Unmarshal(configData, &config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+// ReadConfigFromFile takes a file path as a string and returns *Config, nil on success and nil, error on failure.
+func ReadConfigFromFile(fileName string) (*Config, error) {
+	f, err := os.Open(filepath.Clean(fileName))
 	if err != nil {
 		return nil, err
 	}
@@ -39,13 +53,5 @@ func ReadConfig(filename string) (*Config, error) {
 		return nil, err
 	}
 
-	// Create the config from the file
-	var config Config
-
-	err = json.Unmarshal(data, &config)
-	if err != nil {
-		return nil, err
-	}
-
-	return &config, nil
+	return loadConfig(data)
 }

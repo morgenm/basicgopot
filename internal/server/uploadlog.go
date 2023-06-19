@@ -132,8 +132,16 @@ func (uploadLog *UploadLog) SaveFileLoop() error {
 	return nil
 }
 
-// Load uploadlog from file
-func (uploadLog *UploadLog) LoadFromFile() error {
+// loadFromBytes will load an upload log from given bytes. Returns nil on success, error on failure.
+func (uploadLog *UploadLog) loadFromBytes(data []byte) error {
+	if err := json.Unmarshal(data, &uploadLog.uploads); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Load will load the upload log from the file specified in uploadLog.logPath. Returns nil on success, error on failure.
+func (uploadLog *UploadLog) Load() error {
 	if uploadLog.logPath == "" { // No log file
 		return nil
 	}
@@ -159,10 +167,5 @@ func (uploadLog *UploadLog) LoadFromFile() error {
 		return err
 	}
 
-	// Create the upload map from the file
-	if err = json.Unmarshal(data, &uploadLog.uploads); err != nil {
-		return err
-	}
-
-	return nil
+	return uploadLog.loadFromBytes(data)
 }

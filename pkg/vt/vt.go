@@ -8,13 +8,24 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"regexp"
 
 	"github.com/morgenm/basicgopot/pkg/errors"
 )
 
+// isValidSha256 checks if a given string is a hash in sha256 format
+func isValidSha256(hash string) bool {
+	regex := regexp.MustCompile("^[a-fA-F0-9]{64}$")
+	return regex.MatchString(hash)
+}
+
 // CheckHashVirusTotal will send a file hash to VirusTotal and return the scan output as (*io.ReadCloser, nil) if the file
 // has already been uploaded to VirusTotal. Will return (nil, error) on failure
 func CheckHashVirusTotal(apiKey string, hash string) (*io.ReadCloser, error) {
+	if !isValidSha256(hash) {
+		return nil, &errors.InvalidHashError{}
+	}
+
 	// Make get request
 	client := &http.Client{}
 	requestUrl := fmt.Sprintf("https://www.virustotal.com/api/v3/files/%s", hash)
@@ -41,8 +52,9 @@ func CheckHashVirusTotal(apiKey string, hash string) (*io.ReadCloser, error) {
 
 // UploadFileVirusTotal will upload a file to VirusTotal and will return the analysis as (*io.ReadCloser, nil) on success. Will return
 // (nil, error) on failure.
-func UploadFileVirusTotal(apiKey string, hash string, fileSize float64, fileName string, data []byte) (*io.ReadCloser, error) {
+func UploadFileVirusTotal(apiKey string, fileName string, data []byte) (*io.ReadCloser, error) {
 	// Check if file is greater than 32 MBs, which is the max upload size for VT Community
+	fileSize := len(data) / (1024 * 1024)
 	if fileSize > 32.0 {
 		return nil, &errors.FileTooBig{}
 	}

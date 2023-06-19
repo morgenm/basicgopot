@@ -87,12 +87,9 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 	log.Print("File hash: ", hash)
 
-	// Get file size
-	fileSize := float64(handler.Size) / (1024 * 1024) // Size in MB
-
 	if h.cfg.UseVirusTotal {
 		go func() {
-			err := checkVirusTotal(h.cfg, h.uploadLog, uploadFilepath, hash, fileSize, handler.Filename, data)
+			err := checkVirusTotal(h.cfg, h.uploadLog, uploadFilepath, hash, handler.Filename, data)
 			if err != nil {
 				log.Print(err)
 			}
@@ -111,7 +108,7 @@ func RunServer(cfg *config.Config) {
 		logPath:      cfg.UploadLog,
 		saveInterval: 10,
 	}
-	if err := uploadLog.LoadFromFile(); err != nil {
+	if err := uploadLog.Load(); err != nil {
 		panic(err)
 	}
 

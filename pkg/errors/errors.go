@@ -2,6 +2,9 @@
 package errors
 
 type (
+	// An InvalidConfig error is an error indicating that the config file
+	// being loaded has invalid data
+	InvalidConfig struct{}
 	// A VirusTotalAPIKeyError is an error indicating that VirusTotal did
 	// not accept the API key provided in the config.
 	VirusTotalAPIKeyError struct{}
@@ -22,6 +25,10 @@ type (
 	// was accessed.
 	UploadNotInLog struct{}
 )
+
+func (e *InvalidConfig) Error() string {
+	return "The config file is invalid! Ensure that your config/config.json file matches the specifications in the documentation."
+}
 
 func (e *VirusTotalAPIKeyError) Error() string {
 	return "VirusTotal authentication failure! Validate your API key in the config/config.json file!"
