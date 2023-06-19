@@ -25,7 +25,7 @@ jobs:
       run: |
         cp config/config.json.example config/config.json
         echo "$(cat config/config.json)"
-        echo "$( jq '.VirusTotalApiKey = "VT KEY"' config/config.json)"
+        echo $( jq '.VirusTotalApiKey = "VT KEY"' config/config.json)
         jq '.VirusTotalApiKey = "VT KEY"' config/config.json > config/config.json
         jq '.UploadWebHooks = ""' config/config.json > config/config.json
         echo "$(cat config/config.json)"
