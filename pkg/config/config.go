@@ -4,6 +4,7 @@ package config
 import (
 	"bufio"
 	"encoding/json"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -46,6 +47,8 @@ func loadConfig(configData []byte) (*Config, error) {
 			return nil, &errors.WebHookInvalidMethod{}
 		}
 	}
+
+	log.Print(len(config.VirusTotalApiKey))
 
 	return &config, nil
 }
