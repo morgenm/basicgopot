@@ -68,14 +68,19 @@ The configuration for **_basicgopot_** is stored in `config/config.json`. An exa
     "UploadsDir" : "uploads/", // Directory to store files uploaded to the server
     "UploadLog" : "uploads.json", // File for logging upload and scan/analysis information
     "WebHookDir" : "webhooks/", // Directory to save WebHook responses
-    "UploadWebHooks" : { // WebHook definitions
-        "Flask" : {
+    "UploadWebHooks" : { // WebHook definitions. Set to {} for no WebHooks.
+        "Flask" : { // Unique WebHook Name
             "URL" : "http://localhost:5000",
-            "Method" : "POST",
-            "Headers" : {
-                "Authorization": "Bearer"
+            "Method" : "POST", // Only POST is supported right now.
+            "Headers" : { // Custom headers
+                "api-key": "api-key",
+                "user-agent": "basicgopot",
+                "accept": "*/*"
             },
-            "Data" : "$FILE"
+            "Forms" : { // Form field values
+                "test" : "test field", // Any string is acceptable.
+                "file" : "$FILE" // $FILE will be replaced with the file data and will turn this into a file field.
+            }
         }  
     }
 }
@@ -84,7 +89,7 @@ The configuration for **_basicgopot_** is stored in `config/config.json`. An exa
 If `UploadVirusTotal` is false, but `UseVirusTotal` is true, the uploaded samples' hashes will be checked against VirusTotal, but they will not be uploaded. Note: `UseVirusTotal` has precedence over `UploadVirusTotal`, so if `UseVirusTotal` is false and `UploadVirusTotal` is true, `UploadVirusTotal` will be ignored. 
 `ScanOutputDir`, `UploadsDir`, `UploadLog`, and `WebHookDir` can all be left empty (`""`) if you don't want to save scans, save the uploaded files, log them to the upload log file, or save WebHook responses, respectively.
 
-UploadWebHooks are WebHooks that will execute every time a file is uploaded to the server. You can use this to send the file to other servers, such as sending the file to a **Cuckoo** server to queue it for analysis. Right now, only `POST` requests are supported. The `Data` variable defines what data is sent to the given URL. This can be any string, and any instance of `$FILE` in the data string will be replaced with the entire data of the uploaded file. All WebHooks must have a unique name; the WebHook in this example is titled `Flask`. If you don't want to use any WebHooks, you can set `"UploadWebHooks" : {}`.
+UploadWebHooks are WebHooks that will execute every time a file is uploaded to the server. You can use this to send the file to other servers, such as sending the file to a **Cuckoo** server to queue it for analysis. Right now, only `POST` requests are supported. The `Forms` variable defines what data is sent to the given URL as a form, where the key is the field name and the value is the field value. These can be any strings, and any instance of `$FILE` in the string will be replaced with the entire data of the uploaded file. All WebHooks must have a unique name; the WebHook in this example is titled `Flask`. If you don't want to use any WebHooks, you can set `"UploadWebHooks" : {}`.
 
 
 ## VirusTotal

@@ -1,5 +1,5 @@
 {
-    "ServerPort" : 8080,
+    "ServerPort" : 8081,
     "UploadLimitMB" : 512,
     "UseVirusTotal" : true,
     "UploadVirusTotal" : true,
@@ -8,14 +8,19 @@
     "UploadsDir" : "uploads/",
     "UploadLog" : "uploads.json",
     "WebHookDir" : "webhooks/",
-    "UploadWebHooks" : {
+    "UploadWebHooks" : { 
         "Flask" : {
             "URL" : "http://localhost:5000",
             "Method" : "POST",
             "Headers" : {
-                "Authorization": "Bearer"
+                "api-key": "api-key",
+                "user-agent": "basicgopot",
+                "accept": "*/*"
             },
-            "Data" : "$FILE"
+            "Forms" : {
+                "test" : "test field",
+                "file" : "$FILE"
+            }
         }  
     }
 }

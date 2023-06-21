@@ -3,6 +3,7 @@ package webhook
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -11,13 +12,19 @@ import (
 	"github.com/morgenm/basicgopot/pkg/errors"
 )
 
+// WebHookField is a field for a form request.
+type WebHookField struct {
+	isFile bool   // Is the current field a file to be uploaded.
+	data   []byte // The actual data for the form field.
+}
+
 // WebHook is a request that is made by the server once an event occurs. Currently, the only type
 // of WebHook are those that are run once a file is uploaded to a server.
 type WebHook struct {
-	URL       string            // URL that the request will be made to.
-	Method    string            // HTTP method for the request.
-	Headers   map[string]string // HTTP headers for the request.
-	DataBytes []byte            // Actual data to be sent in the request
+	URL        string                  // URL that the request will be made to.
+	Method     string                  // HTTP method for the request.
+	Headers    map[string]string       // HTTP headers for the request.
+	FormsBytes map[string]WebHookField // Actual data of the forms to be sent in the request.
 }
 
 // NewWebHook creates a WebHook from a WebHookConfig. In doing so, it will evaluate any WebHook strings like $FILE.
@@ -32,57 +39,84 @@ func NewWebHook(c config.WebHookConfig, webHookStringMap map[string][]byte) *Web
 	}
 
 	// Split on each WebHook string so we can add in the real data.
-	data := []byte(c.Data)
-	for webHookString, replacementData := range webHookStringMap {
-		i := 0
-		for {
-			if i >= len(data) {
-				break
-			}
+	formBytes := make(map[string]WebHookField)
+	for formName, formData := range c.Forms {
+		data := []byte(formData)
+		field := WebHookField{}
+		isReplaced := false
+		for webHookString, replacementData := range webHookStringMap {
+			i := 0
+			for {
+				if i >= len(data) {
+					break
+				}
 
-			isMatch := true
-			for j := i; j < i+len(webHookString); j++ {
-				if data[j] != webHookString[j-i] {
-					isMatch = false
-					break
+				isMatch := true
+				for j := i; j < i+len(webHookString); j++ {
+					if data[j] != webHookString[j-i] {
+						isMatch = false
+						break
+					}
 				}
-			}
-			if isMatch {
-				oldData := make([]byte, len(data))
-				copy(oldData, data)
-				data = append(oldData[:i], replacementData...)
-				if i+len(webHookString) < len(oldData) {
-					data = append(data, oldData[i+len(webHookString):]...)
+				if isMatch {
+					isReplaced = true
+					if webHookString == "$FILE" {
+						field.isFile = true
+					}
+
+					oldData := make([]byte, len(data))
+					copy(oldData, data)
+					data = append(oldData[:i], replacementData...)
+					if i+len(webHookString) < len(oldData) {
+						data = append(data, oldData[i+len(webHookString):]...)
+					} else {
+						break
+					}
+					i += len(replacementData)
 				} else {
-					break
+					i++
 				}
-				i += len(replacementData)
-			} else {
-				i++
 			}
 		}
+		if isReplaced {
+			field.data = data
+		} else {
+			field.data = []byte(formData)
+		}
+
+		formBytes[formName] = field
 	}
 
-	w.DataBytes = data
+	w.FormsBytes = formBytes
 	return &w
 }
 
 // makePostRequest will use the data defined in the WebHook to make a POST request. Returns (*io.ReadCloser, nil)
 // on success, (nil, error) on failure. The *io.ReadCloser is the reader for the response retrieved by the request.
 func (w *WebHook) makePostRequest() (*io.ReadCloser, error) {
-	// Create form file for upload
+	// Create form for the POST request
 	buf := new(bytes.Buffer)
-	reader := bytes.NewReader(w.DataBytes) // Create bytes reader for data
 	writer := multipart.NewWriter(buf)
-	formFile, err := writer.CreateFormFile("file", "file")
-	if err != nil {
-		return nil, err
+
+	for formName, field := range w.FormsBytes {
+		if field.isFile {
+			reader := bytes.NewReader(field.data) // Create bytes reader for data
+			form, err := writer.CreateFormFile(formName, "filename")
+			if err != nil {
+				return nil, err
+			}
+
+			if _, err = io.Copy(form, reader); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := writer.WriteField(formName, string(field.data)); err != nil {
+				return nil, err
+			}
+		}
 	}
 
-	if _, err = io.Copy(formFile, reader); err != nil {
-		return nil, err
-	}
-	if err = writer.Close(); err != nil {
+	if err := writer.Close(); err != nil {
 		return nil, err
 	}
 
@@ -93,8 +127,7 @@ func (w *WebHook) makePostRequest() (*io.ReadCloser, error) {
 		return nil, err
 	}
 
-	req.Header.Add("Content-Type", writer.FormDataContentType())
-	req.Header.Add("boundary", writer.Boundary())
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	for headerName, headerVal := range w.Headers {
 		req.Header.Add(headerName, headerVal)
 	}
@@ -104,8 +137,13 @@ func (w *WebHook) makePostRequest() (*io.ReadCloser, error) {
 		return nil, err
 	}
 
-	if resp.StatusCode != 200 {
-		return nil, &errors.WebHookBadResponse{}
+	if resp.StatusCode > 299 || resp.StatusCode < 200 {
+		respBody := []byte{}
+		if _, err := resp.Body.Read(respBody); err == nil {
+			return nil, fmt.Errorf("%w with response code %d and response: %s", &errors.WebHookBadResponse{}, resp.StatusCode, string(respBody))
+		} else {
+			return nil, &errors.WebHookBadResponse{}
+		}
 	}
 
 	return &resp.Body, nil
