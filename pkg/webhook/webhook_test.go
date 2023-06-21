@@ -27,7 +27,9 @@ func TestNewWebHook(t *testing.T) {
 		Headers: map[string]string{
 			"Authorization": "Bearer",
 		},
-		Data: "TEST $FILE $FILE TEST",
+		Forms: map[string]string{
+			"file": "TEST $FILE $FILE TEST",
+		},
 	}
 
 	webHookStrings := make(map[string][]byte)
@@ -44,7 +46,7 @@ func TestNewWebHook(t *testing.T) {
 	expectedData = append(expectedData, " "...)
 	expectedData = append(expectedData, webHookStrings["$FILE"]...)
 	expectedData = append(expectedData, " TEST"...)
-	if !bytes.Equal(w.DataBytes, expectedData) {
+	if !bytes.Equal(w.FormsBytes["file"].data, expectedData) {
 		t.Fatalf("TestNewWebHookEmpty DataBytes do not match!")
 	}
 }
@@ -56,7 +58,9 @@ func TestExecutePOST(t *testing.T) {
 		Headers: map[string]string{
 			"Authorization": "Bearer",
 		},
-		Data: "TEST $FILE $FILE TEST",
+		Forms: map[string]string{
+			"file": "TEST $FILE $FILE TEST",
+		},
 	}
 
 	webHookStrings := make(map[string][]byte)
