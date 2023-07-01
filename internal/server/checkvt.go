@@ -11,9 +11,8 @@ import (
 	"github.com/morgenm/basicgopot/pkg/vt"
 )
 
-// writeVTResultToFile will write the given ReadCloser to a given scan file. The scan file path is based on the
-// passed config. Returns nil on success, error on failure.
-func writeVTResult(cfg *config.Config, reader io.ReadCloser, writer io.WriteCloser) error {
+// writeVTResult will write the given Reader to a given scan writer. Returns nil on success, error on failure.
+func writeVTResult(reader io.Reader, writer io.Writer) error {
 	// Read the result
 	body, err := io.ReadAll(reader)
 	if err != nil {
@@ -27,7 +26,7 @@ func writeVTResult(cfg *config.Config, reader io.ReadCloser, writer io.WriteClos
 	return nil
 }
 
-func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, scanWriter io.WriteCloser, scanFilepath string, uploadFilepath string, hash string, outFileName string, data []byte) error {
+func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, scanWriter io.Writer, scanFilepath string, uploadFilepath string, hash string, outFileName string, data []byte) error {
 	// Check if valid hash
 	if len(hash) != 64 {
 		return &errors.InvalidHashError{}
@@ -44,7 +43,7 @@ func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, scanWriter io.Wri
 			return nil
 		}
 
-		if err = writeVTResult(cfg, *reader, scanWriter); err != nil {
+		if err = writeVTResult(*reader, scanWriter); err != nil {
 			return err
 		}
 
@@ -64,7 +63,7 @@ func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, scanWriter io.Wri
 		return err
 	}
 
-	if err = writeVTResult(cfg, *reader, scanWriter); err != nil {
+	if err = writeVTResult(*reader, scanWriter); err != nil {
 		return err
 	}
 
