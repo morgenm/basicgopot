@@ -14,6 +14,19 @@ import (
 	"github.com/morgenm/basicgopot/pkg/webhook"
 )
 
+// createScanWriter will create a scan file based on the current time and will return the writer
+// scanfilepath and nil on success, nil "" and error on failure.
+func createScanWriter(cfg *config.Config) (io.WriteCloser, string, error) {
+	scanFilename := time.Now().Format(time.UnixDate) + ".json"
+	scanFilepath := filepath.Clean(filepath.Join(cfg.ScanOutputDir, scanFilename))
+	outFile, err := os.Create(scanFilepath)
+	if err != nil { // Failed to create file
+		return nil, "", err
+	}
+
+	return outFile, scanFilepath, nil
+}
+
 type WebHookCallback func([]byte, string)
 
 type FileUploadHandler struct {
@@ -99,7 +112,18 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Check VirusTotal
 	if h.cfg.UseVirusTotal {
 		go func() {
-			err := checkVirusTotal(h.cfg, h.uploadLog, uploadFilepath, hash, handler.Filename, data)
+			var scanWriter io.WriteCloser
+			var scanFilepath string
+			if h.cfg.ScanOutputDir == "" {
+				scanWriter = nil
+			} else {
+				if scanWriter, scanFilepath, err = createScanWriter(h.cfg); err != nil {
+					log.Print(err)
+					return
+				}
+			}
+
+			err := checkVirusTotal(h.cfg, h.uploadLog, scanWriter, scanFilepath, uploadFilepath, hash, handler.Filename, data)
 			if err != nil {
 				log.Print(err)
 			}
