@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/morgenm/basicgopot/pkg/config"
@@ -35,30 +37,7 @@ type FileUploadHandler struct {
 	uploadWebHookCallbacks []WebHookCallback
 }
 
-func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Set file size limit for the upload
-	if err := r.ParseMultipartForm(h.cfg.UploadLimitMB << 20); err != nil {
-		log.Print("Error parsing upload form!")
-		return
-	}
-
-	// Get file
-	file, handler, err := r.FormFile("fileupload")
-	if err != nil {
-		log.Print("File upload from user failed! ", err)
-		fmt.Fprintf(w, "File upload failed!")
-		return
-	}
-	defer file.Close()
-	log.Print("File being uploaded by user...")
-
-	// Read uploaded file to byte array
-	data, err := io.ReadAll(file)
-	if err != nil {
-		log.Print("Failed to read uploaded file!")
-		return
-	}
-
+func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, data []byte) {
 	// Get time to create the upload file name, and to store it in the upload log
 	timeUploaded := time.Now().Format(time.UnixDate)
 
@@ -89,14 +68,9 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		uploadFilepath = filepath.Clean(filepath.Join("uploads/", timeUploaded))
 	}
 
-	// Inform user of success by serving the upload success HTML file
-	http.Redirect(w, r, "uploaded.html", 303)
-	// fmt.Fprintf(w, "File uploaded!")
-	log.Print("File uploaded by user.")
-
 	// Get file hash
 	hasher := sha256.New()
-	_, err = hasher.Write(data)
+	_, err := hasher.Write(data)
 	if err != nil {
 		log.Print("Error getting file hash!")
 		return
@@ -107,6 +81,15 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Add basic info about the uploaded file to the log
 	if err = h.uploadLog.AddFile(uploadFilepath, handler.Filename, timeUploaded, "", hash, "Not uploaded"); err != nil {
 		panic(err)
+	}
+
+	// Wait for upload hooks and VT goroutine
+	var wg sync.WaitGroup
+	if h.cfg.UseVirusTotal {
+		wg.Add(1)
+	}
+	if len(h.cfg.UploadWebHooks) > 1 {
+		wg.Add(1)
 	}
 
 	// Check VirusTotal
@@ -127,6 +110,8 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Print(err)
 			}
+
+			wg.Done()
 		}()
 	}
 
@@ -135,8 +120,43 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			for _, webHook := range h.uploadWebHookCallbacks {
 				webHook(data, uploadFilepath)
 			}
+			wg.Done()
 		}()
 	}
+
+	wg.Wait()
+}
+
+func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Set file size limit for the upload
+	if err := r.ParseMultipartForm(h.cfg.UploadLimitMB << 20); err != nil {
+		log.Print("Error parsing upload form!")
+		return
+	}
+
+	// Get file
+	file, handler, err := r.FormFile("fileupload")
+	if err != nil {
+		log.Print("File upload from user failed! ", err)
+		fmt.Fprintf(w, "File upload failed!")
+		return
+	}
+	defer file.Close()
+	log.Print("File being uploaded by user...")
+
+	// Read uploaded file to byte array
+	data, err := io.ReadAll(file)
+	if err != nil {
+		log.Print("Failed to read uploaded file!")
+		return
+	}
+
+	// Inform user of success by serving the upload success HTML file
+	http.Redirect(w, r, "uploaded.html", 303)
+	// fmt.Fprintf(w, "File uploaded!")
+	log.Print("File uploaded by user.")
+
+	h.handleUploadFile(handler, data)
 }
 
 func writeWebHookResponseToFile(cfg *config.Config, reader io.ReadCloser, webHookFileName string) error {

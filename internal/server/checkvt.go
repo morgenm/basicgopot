@@ -63,6 +63,10 @@ func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, scanWriter io.Wri
 		return err
 	}
 
+	if scanWriter == nil { // We are done here if we are not outputting scans to file
+		return nil
+	}
+
 	if err = writeVTResult(*reader, scanWriter); err != nil {
 		return err
 	}
