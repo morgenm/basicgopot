@@ -276,15 +276,15 @@ func (httpServer HTTPServer) RunServer(cfg *config.Config) {
 	if err := httpServer.srv.ListenAndServe(); err != nil && err.Error() != expectedErr.Error() {
 		log.Print("Error while listening and serving!: ", err)
 	}
-
-	// Clean up
-	httpServer.uploadLog.quitSavingLoop = true
 }
 
 func (httpServer HTTPServer) StopServer() {
 	log.Print("Shutting down server...")
+
+	httpServer.uploadLog.quitSavingLoop = true // Stop upload log
+
 	if httpServer.srv == nil {
-		log.Print("Nil server")
+		log.Print("Fatal error: HTTP server is nil!")
 		return
 	}
 
