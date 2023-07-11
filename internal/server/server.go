@@ -188,7 +188,8 @@ func writeWebHookResponseToFile(cfg *config.Config, reader io.ReadCloser, webHoo
 	return nil
 }
 
-func CreateHTTPServer(cfg *config.Config) *HTTPServer {
+// CreateHTTPServer returns a pointer to a new HTTPServer. Takes config as input in order to define the upload log and WebHooks.
+func CreateHTTPServer(cfg *config.Config) (*HTTPServer, error) {
 	var httpServer HTTPServer
 
 	// Create upload log
@@ -197,15 +198,8 @@ func CreateHTTPServer(cfg *config.Config) *HTTPServer {
 		saveInterval: 10,
 	}
 	if err := httpServer.uploadLog.Load(); err != nil {
-		panic(err)
+		return nil, err
 	}
-
-	go func() {
-		err := httpServer.uploadLog.SaveFileLoop()
-		if err != nil {
-			panic(err)
-		}
-	}()
 
 	// Create Upload WebHook callbacks
 	uploadWebHookCallbacks := []WebHookCallback{}
@@ -264,10 +258,18 @@ func CreateHTTPServer(cfg *config.Config) *HTTPServer {
 		WriteTimeout: 10 * time.Second,
 	}
 
-	return &httpServer
+	return &httpServer, nil
 }
 
 func (httpServer HTTPServer) RunServer(cfg *config.Config) {
+	// Run upload log save loop
+	go func() {
+		err := httpServer.uploadLog.SaveFileLoop()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	// Listen
 	log.Print("Server listening on ", httpServer.srv.Addr)
 	expectedErr := http.ErrServerClosed

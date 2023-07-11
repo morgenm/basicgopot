@@ -3,12 +3,14 @@ package server
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -174,7 +176,6 @@ func TestServerUploadNoSaveNoWH(t *testing.T) {
 	}
 }
 
-/*
 func TestServerUploadNoWH(t *testing.T) {
 	// Create temp dir for uploads
 	tmpDirUploads := t.TempDir()
@@ -272,4 +273,66 @@ func TestServerUploadNoWH(t *testing.T) {
 		t.Fatalf("TestServerUploadNoWH saved file doesn't match!")
 	}
 }
-*/
+
+func TestCreateAndRunHTTPServer(t *testing.T) {
+	cfg := &config.Config{}
+
+	configPath := os.Getenv("BASICGOPOT_CONFIG_FILE")
+
+	if configPath == "" {
+		// Quite ugly, but using config.json from top level dir so we
+		// have access to the legitimate API key
+		configPath = "../../config/config.json"
+	}
+
+	cfg, err := config.ReadConfigFromFile(configPath)
+	if err != nil {
+		pwd, _ := os.Getwd()
+		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
+	}
+
+	cfg.UseVirusTotal = true
+	cfg.UploadVirusTotal = true
+	cfg.WebHookDir = ""
+	cfg.ScanOutputDir = ""
+	cfg.UploadLog = ""
+	cfg.UploadsDir = ""
+	cfg.UploadWebHooks = make(map[string]config.WebHookConfig)
+	testWebHook := config.WebHookConfig{}
+	cfg.UploadWebHooks["TestWebHook"] = testWebHook
+
+	// Create HTTP server.
+	httpServer, err := CreateHTTPServer(cfg)
+	if err != nil {
+		t.Fatalf("TestCreateAndRunHTTPServer CreateHTTPServer = %v!", err)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Run HTTP server.
+	go func() {
+		defer wg.Done()
+		httpServer.RunServer(cfg)
+	}()
+
+	// Test connection to server.
+	client := &http.Client{}
+	url := "http://localhost:" + fmt.Sprint(cfg.ServerPort) + "/upload"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		t.Fatalf("TestCreateAndRunHTTPServer error creating GET request to server = %v!", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("TestCreateAndRunHTTPServer error in GET request to server = %v!", err)
+	}
+	if resp.StatusCode != 200 {
+		t.Fatalf("TestCreateAndRunHTTPServer GET request status code = %d, not 200!", resp.StatusCode)
+	}
+
+	// Shutdown and wait for HTTP server.
+	httpServer.StopServer()
+	wg.Wait()
+}

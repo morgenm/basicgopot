@@ -62,7 +62,11 @@ func main() {
 
 	// Create waitgroup for servers. This is so we can implement multiple servers later.
 	var wg sync.WaitGroup
-	httpServer := server.CreateHTTPServer(cfg)
+	httpServer, err := server.CreateHTTPServer(cfg)
+	if err != nil {
+		log.Print("Fatal error: Could not create HTTP server!")
+		return
+	}
 	wg.Add(1)
 
 	c := make(chan os.Signal, 1)
