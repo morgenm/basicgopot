@@ -7,6 +7,7 @@ import (
 	"io"
 	"math/rand"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -302,6 +303,15 @@ func TestCreateAndRunHTTPServer(t *testing.T) {
 	cfg.UploadWebHooks = make(map[string]config.WebHookConfig)
 	testWebHook := config.WebHookConfig{}
 	cfg.UploadWebHooks["TestWebHook"] = testWebHook
+
+	// Get ephemeral port in a hacky way.
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatalf("TestCreateAndRunHTTPServer net.Listen = %v!", err)
+	}
+	port := listener.Addr().(*net.TCPAddr).Port
+	listener.Close()
+	cfg.ServerPort = port
 
 	// Create HTTP server.
 	httpServer, err := CreateHTTPServer(cfg)
