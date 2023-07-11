@@ -165,7 +165,7 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.handleUploadFile(handler, data)
 }
 
-func writeWebHookResponseToFile(cfg *config.Config, reader io.ReadCloser, webHookFileName string) error {
+func writeWebHookResponseToFile(cfg *config.Config, reader io.Reader, webHookFileName string) error {
 	// Read the result
 	body, err := io.ReadAll(reader)
 	if err != nil {

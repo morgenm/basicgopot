@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -274,6 +275,7 @@ func TestServerUploadNoWH(t *testing.T) {
 	}
 }
 
+// TestCreateAndRunHTTPServer creates an HTTP server, runs it, and does a simple GET request to check if it is up.
 func TestCreateAndRunHTTPServer(t *testing.T) {
 	cfg := &config.Config{}
 
@@ -335,4 +337,38 @@ func TestCreateAndRunHTTPServer(t *testing.T) {
 	// Shutdown and wait for HTTP server.
 	httpServer.StopServer()
 	wg.Wait()
+}
+
+// TestWriteWebHookResponseToFile tests writing a sample WebHook response to a file.
+func TestWriteWebHookResponseToFile(t *testing.T) {
+	cfg := &config.Config{
+		WebHookDir: t.TempDir(),
+	}
+
+	b := []byte{1, 2, 3, 4, 5}
+	reader := bytes.NewBuffer(b)
+
+	webHookFilename := "TestWebHook"
+
+	err := writeWebHookResponseToFile(cfg, reader, webHookFilename)
+	if err != nil {
+		t.Fatalf("TestWriteWebHookResponseToFile error writing file = %v", err)
+	}
+}
+
+// TestWriteWebHookResponseToFileBadDir tests writing a sample WebHook response to a non existing directory.
+func TestWriteWebHookResponseToFileBadDir(t *testing.T) {
+	cfg := &config.Config{
+		WebHookDir: "::::bad:path////",
+	}
+
+	b := []byte{1, 2, 3, 4, 5}
+	reader := bytes.NewBuffer(b)
+
+	webHookFilename := "TestWebHook"
+
+	err := writeWebHookResponseToFile(cfg, reader, webHookFilename)
+	if err == nil || !strings.Contains(err.Error(), "no such file or directory") {
+		t.Fatalf("TestWriteWebHookResponseToFile error writing file = %v, want no such file or directory", err)
+	}
 }
