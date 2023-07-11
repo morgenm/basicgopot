@@ -281,7 +281,7 @@ func (httpServer HTTPServer) RunServer(cfg *config.Config) {
 func (httpServer HTTPServer) StopServer() {
 	log.Print("Shutting down server...")
 
-	httpServer.uploadLog.quitSavingLoop = true // Stop upload log
+	httpServer.uploadLog.StopSaveFileLoop() // Stop upload log
 
 	if httpServer.srv == nil {
 		log.Print("Fatal error: HTTP server is nil!")

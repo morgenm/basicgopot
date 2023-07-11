@@ -138,15 +138,28 @@ func (uploadLog *UploadLog) SaveFile() error {
 
 // Loop and save file every so many seconds.
 func (uploadLog *UploadLog) SaveFileLoop() error {
-	for !uploadLog.quitSavingLoop {
+	isQuit := false
+
+	for !isQuit {
 		if err := uploadLog.SaveFile(); err != nil {
 			return err
 		}
 
 		time.Sleep(time.Duration(uploadLog.saveInterval) * time.Second)
+
+		// Get isQuit
+		uploadLog.mutx.Lock()
+		isQuit = uploadLog.quitSavingLoop
+		uploadLog.mutx.Unlock()
 	}
 
 	return nil
+}
+
+func (uploadLog *UploadLog) StopSaveFileLoop() {
+	uploadLog.mutx.Lock()
+	defer uploadLog.mutx.Unlock()
+	uploadLog.quitSavingLoop = true
 }
 
 // loadFromBytes will load an upload log from given bytes. Returns nil on success, error on failure.
