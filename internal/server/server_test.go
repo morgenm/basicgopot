@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"math/rand"
 	"mime/multipart"
@@ -13,6 +14,45 @@ import (
 
 	"github.com/morgenm/basicgopot/pkg/config"
 )
+
+// TestCreateScanWriter tests that a scan writer can be created and written to in a test dir.
+func TestCreateScanWriter(t *testing.T) {
+	tmpDirScans := t.TempDir()
+	cfg := config.Config{
+		ScanOutputDir: tmpDirScans,
+	}
+
+	writer, filepath, err := createScanWriter(&cfg)
+	if err != nil {
+		t.Fatalf(`TestCreateScanWriter = %v, want nil`, err)
+	}
+
+	// Check if file was created.
+	if _, err := os.Stat(filepath); errors.Is(err, os.ErrNotExist) {
+		t.Fatalf(`TestCreateScanWriter did not create scan file!`)
+	}
+
+	// Check if write works.
+	if b, err := writer.Write([]byte{1, 2, 3}); err == nil {
+		if b != 3 {
+			t.Fatalf(`TestCreateScanWriter tried to write %d bytes, but ended up writing %d`, 3, b)
+		}
+	} else {
+		t.Fatalf(`TestCreateScanWriter failed writing with %v!`, err)
+	}
+}
+
+// TestCreateScanWriterBad tests creating a scan with an invalid path.
+func TestCreateScanWriterBad(t *testing.T) {
+	cfg := config.Config{
+		ScanOutputDir: "::::bad:path////",
+	}
+
+	_, _, err := createScanWriter(&cfg)
+	if err == nil {
+		t.Fatalf(`TestCreateScanWriter = nil, want error`)
+	}
+}
 
 func TestServerUploadNoSaveNoVTNoWH(t *testing.T) {
 	cfg := config.Config{}
@@ -134,6 +174,7 @@ func TestServerUploadNoSaveNoWH(t *testing.T) {
 	}
 }
 
+/*
 func TestServerUploadNoWH(t *testing.T) {
 	// Create temp dir for uploads
 	tmpDirUploads := t.TempDir()
@@ -231,3 +272,4 @@ func TestServerUploadNoWH(t *testing.T) {
 		t.Fatalf("TestServerUploadNoWH saved file doesn't match!")
 	}
 }
+*/

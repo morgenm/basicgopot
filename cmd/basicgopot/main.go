@@ -14,6 +14,8 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
+	"sync"
 
 	"github.com/morgenm/basicgopot/internal/server"
 	"github.com/morgenm/basicgopot/pkg/config"
@@ -58,6 +60,26 @@ func main() {
 		}
 	}
 
-	// Start the server.
-	server.RunServer(cfg)
+	// Create waitgroup for servers. This is so we can implement multiple servers later.
+	var wg sync.WaitGroup
+	httpServer := server.CreateHTTPServer(cfg)
+	wg.Add(1)
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for range c {
+			// sig is a ^C, handle it
+			httpServer.StopServer()
+		}
+	}()
+
+	// Run HTTP server
+	go func() {
+		defer wg.Done()
+		httpServer.RunServer(cfg)
+	}()
+
+	// Wait for all servers.
+	wg.Wait()
 }
