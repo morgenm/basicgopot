@@ -108,6 +108,7 @@ func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, data 
 			} else {
 				if scanWriter, scanFilepath, err = createScanWriter(h.cfg); err != nil {
 					log.Print(err)
+					wg.Done()
 					return
 				}
 			}
