@@ -3,7 +3,10 @@ package server
 import (
 	"encoding/json"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -120,7 +123,7 @@ func TestUpdateFileScan(t *testing.T) {
 	}
 }
 
-// Test saving to file.
+// TestSaveFileTest tests saving to file without actually writing.
 func TestSaveFileTest(t *testing.T) {
 	u := &UploadLog{
 		logPath: "",
@@ -131,7 +134,41 @@ func TestSaveFileTest(t *testing.T) {
 	}
 
 	if err := u.SaveFile(); err != nil {
-		t.Fatalf(`testSaveFileTest failed on first file = %v, want nil`, err)
+		t.Fatalf(`testSaveFileTest failed on save file = %v, want nil`, err)
+	}
+}
+
+// TestSaveFile tests saving to file.
+func TestSaveFile(t *testing.T) {
+	u := &UploadLog{
+		logPath: filepath.Join(t.TempDir(), "log.log"),
+	}
+
+	if err := u.AddFile("uploads/test.txt", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
+		t.Fatalf(`TestSaveFile add file failed = %v, want nil`, err)
+	}
+
+	if err := u.SaveFile(); err != nil {
+		t.Fatalf(`TestSaveFile failed on save file = %v, want nil`, err)
+	}
+
+	// Read file to ensure saving was successful
+	f, err := os.Open(u.logPath)
+	if err != nil {
+		t.Fatalf(`TestSaveFile failed to open file: %v`, err)
+	}
+	defer f.Close()
+
+	bytes := make([]byte, 1024)
+	numBytes, err := f.Read(bytes)
+	if err != nil {
+		t.Fatalf("TestSaveFile could not read the saved log file!")
+	} else if numBytes == 0 {
+		t.Fatalf("TestSaveFile read 0 bytes from saved log file!")
+	}
+
+	if !strings.Contains(string(bytes), "uploads/test.txt") {
+		t.Fatalf("TestSaveFile invalid log file output!")
 	}
 }
 
