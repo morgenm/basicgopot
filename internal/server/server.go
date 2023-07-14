@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"github.com/morgenm/basicgopot/pkg/config"
+	"github.com/morgenm/basicgopot/pkg/logging"
 	"github.com/morgenm/basicgopot/pkg/webhook"
 )
 
@@ -23,11 +23,13 @@ type FileUploadHandler struct {
 	cfg                    *config.Config
 	uploadLog              *UploadLog
 	uploadWebHookCallbacks []WebHookCallback
+	log                    *logging.Log
 }
 
 type HTTPServer struct {
 	srv       *http.Server
 	uploadLog *UploadLog
+	log       *logging.Log
 }
 
 // createScanWriter will create a scan file based on the current time and will return the writer
@@ -54,18 +56,18 @@ func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, data 
 		uploadFilepath = filepath.Clean(filepath.Join(h.cfg.UploadsDir, timeUploaded))
 		outFile, err := os.Create(uploadFilepath)
 		if err != nil {
-			log.Print("Failed to create file!")
+			h.log.Log("Failed to create file!")
 			return
 		}
 
 		// Write to file
 		_, err = outFile.Write(data)
 		if err != nil {
-			log.Print("Error writing the uploaded file!")
+			h.log.Log("Error writing the uploaded file!")
 			return
 		}
 		if err := outFile.Close(); err != nil {
-			log.Print("Error closing the new uploaded file!")
+			h.log.Log("Error closing the new uploaded file!")
 			return
 		}
 	} else {
@@ -78,11 +80,11 @@ func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, data 
 	hasher := sha256.New()
 	_, err := hasher.Write(data)
 	if err != nil {
-		log.Print("Error getting file hash!")
+		h.log.Log("Error getting file hash!")
 		return
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
-	log.Print("File hash: ", hash)
+	h.log.Log("File hash: ", hash)
 
 	// Add basic info about the uploaded file to the log
 	if err = h.uploadLog.AddFile(uploadFilepath, handler.Filename, timeUploaded, "", hash, "Not uploaded"); err != nil {
@@ -107,7 +109,7 @@ func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, data 
 				scanWriter = nil
 			} else {
 				if scanWriter, scanFilepath, err = createScanWriter(h.cfg); err != nil {
-					log.Print(err)
+					h.log.Log(err)
 					wg.Done()
 					return
 				}
@@ -115,7 +117,7 @@ func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, data 
 
 			err := checkVirusTotal(h.cfg, h.uploadLog, scanWriter, scanFilepath, uploadFilepath, hash, handler.Filename, data)
 			if err != nil {
-				log.Print(err)
+				h.log.Log(err)
 			}
 
 			wg.Done()
@@ -137,31 +139,31 @@ func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, data 
 func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Set file size limit for the upload
 	if err := r.ParseMultipartForm(h.cfg.UploadLimitMB << 20); err != nil {
-		log.Print("Error parsing upload form!")
+		h.log.Log("Error parsing upload form!")
 		return
 	}
 
 	// Get file
 	file, handler, err := r.FormFile("fileupload")
 	if err != nil {
-		log.Print("File upload from user failed! ", err)
+		h.log.Log("File upload from user failed! ", err)
 		fmt.Fprintf(w, "File upload failed!")
 		return
 	}
 	defer file.Close()
-	log.Print("File being uploaded by user...")
+	h.log.Log("File being uploaded by user...")
 
 	// Read uploaded file to byte array
 	data, err := io.ReadAll(file)
 	if err != nil {
-		log.Print("Failed to read uploaded file!")
+		h.log.Log("Failed to read uploaded file!")
 		return
 	}
 
 	// Inform user of success by serving the upload success HTML file
 	http.Redirect(w, r, "uploaded.html", 303)
 	// fmt.Fprintf(w, "File uploaded!")
-	log.Print("File uploaded by user.")
+	h.log.Log("File uploaded by user.")
 
 	h.handleUploadFile(handler, data)
 }
@@ -190,7 +192,7 @@ func writeWebHookResponseToFile(cfg *config.Config, reader io.Reader, webHookFil
 }
 
 // CreateHTTPServer returns a pointer to a new HTTPServer. Takes config as input in order to define the upload log and WebHooks.
-func CreateHTTPServer(cfg *config.Config) (*HTTPServer, error) {
+func CreateHTTPServer(cfg *config.Config, log *logging.Log) (*HTTPServer, error) {
 	var httpServer HTTPServer
 
 	// Create upload log
@@ -201,6 +203,9 @@ func CreateHTTPServer(cfg *config.Config) (*HTTPServer, error) {
 	if err := httpServer.uploadLog.Load(); err != nil {
 		return nil, err
 	}
+
+	// Define logger
+	httpServer.log = log
 
 	// Create Upload WebHook callbacks
 	uploadWebHookCallbacks := []WebHookCallback{}
@@ -214,32 +219,32 @@ func CreateHTTPServer(cfg *config.Config) (*HTTPServer, error) {
 			// Create WebHook.
 			w := webhook.NewWebHook(webHookConfig, webHookStringMap)
 			if w == nil {
-				log.Print("Error creating a WebHook for file uploads!")
+				httpServer.log.Log("Error creating a WebHook for file uploads!")
 				return
 			}
 
 			// Execute WebHook.
 			reader, err := w.Execute()
 			if err != nil {
-				log.Print("Error executing a WebHook for file uploads: ", err)
+				httpServer.log.Log("Error executing a WebHook for file uploads: ", err)
 				return
 			}
 
 			webHookFilename := webHookName + " " + time.Now().Format(time.UnixDate)
 			if err := writeWebHookResponseToFile(cfg, *reader, webHookFilename); err != nil {
-				log.Print("Error writing a WebHook response to file: ", err)
+				httpServer.log.Log("Error writing a WebHook response to file: ", err)
 				return
 			}
 
 			if err = httpServer.uploadLog.UpdateAddWebHookPath(uploadPath, webHookName, webHookFilename); err != nil {
-				log.Print("Error updating UploadLog with WebHook filepath!")
+				httpServer.log.Log("Error updating UploadLog with WebHook filepath!")
 				return
 			}
 		})
 	}
 
 	// Create FileUploadHandler to add route to mux.
-	fileUploadHandler := FileUploadHandler{cfg, httpServer.uploadLog, uploadWebHookCallbacks}
+	fileUploadHandler := FileUploadHandler{cfg, httpServer.uploadLog, uploadWebHookCallbacks, log}
 
 	// Create FileServer Handler to add route to mux
 	fileServer := http.FileServer(http.Dir("web/static"))
@@ -272,24 +277,24 @@ func (httpServer HTTPServer) RunServer(cfg *config.Config) {
 	}()
 
 	// Listen
-	log.Print("Server listening on ", httpServer.srv.Addr)
+	httpServer.log.Log("Server listening on ", httpServer.srv.Addr)
 	expectedErr := http.ErrServerClosed
 	if err := httpServer.srv.ListenAndServe(); err != nil && err.Error() != expectedErr.Error() {
-		log.Print("Error while listening and serving!: ", err)
+		httpServer.log.Log("Error while listening and serving!: ", err)
 	}
 }
 
 func (httpServer HTTPServer) StopServer() {
-	log.Print("Shutting down server...")
+	httpServer.log.Log("Shutting down server...")
 
 	httpServer.uploadLog.StopSaveFileLoop() // Stop upload log
 
 	if httpServer.srv == nil {
-		log.Print("Fatal error: HTTP server is nil!")
+		httpServer.log.Log("Fatal error: HTTP server is nil!")
 		return
 	}
 
 	if err := httpServer.srv.Shutdown(context.Background()); err != nil {
-		log.Print("Error while shutting down server: ", err)
+		httpServer.log.Log("Error while shutting down server: ", err)
 	}
 }

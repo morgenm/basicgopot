@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	goerrors "errors"
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
 	"strings"
@@ -87,7 +86,6 @@ func TestCheckVirusTotalKnownHash(t *testing.T) {
 
 	if s := writer.String(); s != "" {
 		if !strings.Contains(s, "last_submission_date") {
-			log.Print(s)
 			t.Fatalf(`TestCheckVirusTotalKnownHash invalid output buffer!`)
 		}
 	} else {

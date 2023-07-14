@@ -19,6 +19,7 @@ import (
 
 	"github.com/morgenm/basicgopot/internal/server"
 	"github.com/morgenm/basicgopot/pkg/config"
+	"github.com/morgenm/basicgopot/pkg/logging"
 )
 
 // Main reads the config, creates upload and scan dirs if configured to, and runs the server.
@@ -26,7 +27,14 @@ func main() {
 	// Load config
 	cfg, err := config.ReadConfigFromFile("config/config.json")
 	if err != nil {
-		log.Print("Error reading config.json!")
+		log.Print("Error reading config.json!") // Logging with log since we can't create the actual log without the config.
+		return
+	}
+
+	// Create the Log
+	l, err := logging.New(cfg.LogFile)
+	if err != nil {
+		log.Print("Error creating log!") // Logging with log since we can't create the actual log if this failed.
 		return
 	}
 
@@ -62,7 +70,7 @@ func main() {
 
 	// Create waitgroup for servers. This is so we can implement multiple servers later.
 	var wg sync.WaitGroup
-	httpServer, err := server.CreateHTTPServer(cfg)
+	httpServer, err := server.CreateHTTPServer(cfg, l)
 	if err != nil {
 		log.Print("Fatal error: Could not create HTTP server!")
 		return

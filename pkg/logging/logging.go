@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-// Log will log strings to stdout or to a file, depending on what
+// Log will log strings to stdout or to both stdout file, depending on what
 // is passed to New().
 type Log struct {
 	logger  *log.Logger
@@ -16,7 +16,7 @@ type Log struct {
 
 // New returns a pointer to a new log. If logpath = "", then
 // log will output to stdout, else it will open the given file and write
-// logs to it.
+// logs to it, as well as log to stdout.
 func New(logpath string) (*Log, error) {
 	if logpath != "" {
 		// Open and create if needed.
@@ -48,8 +48,16 @@ func (l *Log) Close() error {
 
 func (l *Log) Log(v ...any) {
 	l.logger.Print(v...)
+	// If logging to file, also log to stdout.
+	if l.logFile != nil {
+		log.Print(v...)
+	}
 }
 
 func (l *Log) Logf(format string, v ...any) {
 	l.logger.Printf(format, v...)
+	// If logging to file, also log to stdout.
+	if l.logFile != nil {
+		log.Printf(format, v...)
+	}
 }

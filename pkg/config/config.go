@@ -19,6 +19,7 @@ type WebHookConfig struct {
 
 type Config struct {
 	ServerPort       int
+	LogFile          string                   // Filepath to log to. If set to "", will just log to stdout
 	UploadLimitMB    int64                    // Upload file size limit in Megabytes.
 	UseVirusTotal    bool                     // Whether or not to use VT.
 	UploadVirusTotal bool                     // Whether to upload to VT.
