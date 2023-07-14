@@ -20,7 +20,7 @@ type UploadLog struct {
 }
 
 // Add file to UploadLog. Returns err if already in log.
-func (uploadLog *UploadLog) AddFile(uploadPath string, originalFilename string, timeUpload string, scanPath string, hash string, scanType string) error {
+func (uploadLog *UploadLog) AddFile(uploadPath string, uploaderIP string, originalFilename string, timeUpload string, scanPath string, hash string, scanType string) error {
 	uploadLog.mutx.Lock()
 	defer uploadLog.mutx.Unlock()
 
@@ -31,6 +31,7 @@ func (uploadLog *UploadLog) AddFile(uploadPath string, originalFilename string, 
 	// Create map of values for this upload
 	uploadVals := map[string]interface{}{
 		"Original Filename": originalFilename,
+		"Uploader IP":       uploaderIP,
 		"Time Uploaded":     timeUpload,
 		"Scan File":         scanPath,
 		"File Hash":         hash,
@@ -48,7 +49,7 @@ func (uploadLog *UploadLog) AddFile(uploadPath string, originalFilename string, 
 }
 
 // Update existing log entry. Returns err if not already in log.
-func (uploadLog *UploadLog) UpdateFile(uploadPath string, originalFilename string, timeUpload string, scanPath string, hash string, scanType string) error {
+func (uploadLog *UploadLog) UpdateFile(uploadPath string, uploaderIP string, originalFilename string, timeUpload string, scanPath string, hash string, scanType string) error {
 	uploadLog.mutx.Lock()
 	defer uploadLog.mutx.Unlock()
 
@@ -59,6 +60,7 @@ func (uploadLog *UploadLog) UpdateFile(uploadPath string, originalFilename strin
 	// Create map of values for this upload
 	uploadVals := map[string]interface{}{
 		"Original Filename": originalFilename,
+		"Uploader IP":       uploaderIP,
 		"Time Uploaded":     timeUpload,
 		"Scan File":         scanPath,
 		"File Hash":         hash,

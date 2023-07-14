@@ -93,7 +93,7 @@ func TestCheckVirusTotalKnownHash(t *testing.T) {
 
 	hash := "55f8718109829bf506b09d8af615b9f107a266e19f7a311039d1035f180b22d4" // Define simple file already present on VT
 	ul := UploadLog{}
-	if err = ul.AddFile("uploadpath", "original", "now", "scan", hash, "Scan"); err != nil {
+	if err = ul.AddFile("uploadpath", "localhost", "original", "now", "scan", hash, "Scan"); err != nil {
 		t.Fatalf(`TestCheckVirusTotalKnownHash adding file to uploas log returned %v`, err)
 	}
 	var writer bytes.Buffer
@@ -138,7 +138,7 @@ func TestCheckVirusTotalKnownHashNoOutput(t *testing.T) {
 
 	hash := "55f8718109829bf506b09d8af615b9f107a266e19f7a311039d1035f180b22d4" // Define simple file already present on VT
 	ul := UploadLog{}
-	if err = ul.AddFile("uploadpath", "original", "now", "scan", hash, "Scan"); err != nil {
+	if err = ul.AddFile("uploadpath", "localhost", "original", "now", "scan", hash, "Scan"); err != nil {
 		t.Fatalf(`TestCheckVirusTotalKnownHashNoOutput adding file to uploas log returned %v`, err)
 	}
 
@@ -191,7 +191,7 @@ func TestCheckVirusTotalRandomFile(t *testing.T) {
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
 	ul := UploadLog{}
-	if err = ul.AddFile("uploadpath", "original", "now", "scan", hash, "Scan"); err != nil {
+	if err = ul.AddFile("uploadpath", "localhost", "original", "now", "scan", hash, "Scan"); err != nil {
 		t.Fatalf(`TestCheckVirusTotalKnownHash adding file to uploas log returned %v`, err)
 	}
 	var writer bytes.Buffer
@@ -253,7 +253,7 @@ func TestCheckVirusTotalRandomFileNoOutput(t *testing.T) {
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
 	ul := UploadLog{}
-	if err = ul.AddFile("uploadpath", "original", "now", "scan", hash, "Scan"); err != nil {
+	if err = ul.AddFile("uploadpath", "localhost", "original", "now", "scan", hash, "Scan"); err != nil {
 		t.Fatalf(`TestCheckVirusTotalRandomFileNoOutput adding file to uploas log returned %v`, err)
 	}
 
@@ -306,7 +306,7 @@ func TestCheckVirusTotalRandomFileNoUpload(t *testing.T) {
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
 	ul := UploadLog{}
-	if err = ul.AddFile("uploadpath", "original", "now", "scan", hash, "Scan"); err != nil {
+	if err = ul.AddFile("uploadpath", "localhost", "original", "now", "scan", hash, "Scan"); err != nil {
 		t.Fatalf(`TestCheckVirusTotalRandomFileNoUpload adding file to uploas log returned %v`, err)
 	}
 	var writer bytes.Buffer
@@ -416,7 +416,7 @@ func TestCheckVirusRandTooBig(t *testing.T) {
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
 	ul := UploadLog{}
-	if err = ul.AddFile("uploadpath", "original", "now", "scan", hash, "Scan"); err != nil {
+	if err = ul.AddFile("uploadpath", "localhost", "original", "now", "scan", hash, "Scan"); err != nil {
 		t.Fatalf(`TestCheckVirusRandTooBig adding file to uploas log returned %v`, err)
 	}
 

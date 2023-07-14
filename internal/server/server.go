@@ -51,7 +51,7 @@ func createScanWriter(cfg *config.Config) (io.WriteCloser, string, error) {
 	return outFile, scanFilepath, nil
 }
 
-func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, data []byte) {
+func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, uploaderIP string, data []byte) {
 	// Get time to create the upload file name, and to store it in the upload log
 	timeUploaded := time.Now().Format(time.UnixDate)
 
@@ -93,7 +93,7 @@ func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, data 
 	h.log.Log("File hash: ", hash)
 
 	// Add basic info about the uploaded file to the log
-	if err = h.uploadLog.AddFile(uploadFilepath, handler.Filename, timeUploaded, "", hash, "Not uploaded"); err != nil {
+	if err = h.uploadLog.AddFile(uploadFilepath, uploaderIP, handler.Filename, timeUploaded, "", hash, "Not uploaded"); err != nil {
 		panic(err)
 	}
 
@@ -171,7 +171,7 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// fmt.Fprintf(w, "File uploaded!")
 	h.log.Logf("File uploaded by %s.", r.RemoteAddr)
 
-	h.handleUploadFile(handler, data)
+	h.handleUploadFile(handler, r.RemoteAddr, data)
 }
 
 func writeWebHookResponseToFile(cfg *config.Config, reader io.Reader, webHookFileName string) error {
