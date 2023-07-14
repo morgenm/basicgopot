@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/morgenm/basicgopot/pkg/config"
+	"github.com/morgenm/basicgopot/pkg/logging"
 )
 
 // TestCreateScanWriter tests that a scan writer can be created and written to in a test dir.
@@ -60,10 +61,17 @@ func TestCreateScanWriterBad(t *testing.T) {
 
 func TestServerUploadNoSaveNoVTNoWH(t *testing.T) {
 	cfg := config.Config{}
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to create the log!: %v`, err)
+	}
+
 	ul := UploadLog{}
 	h := FileUploadHandler{
 		cfg:       &cfg,
 		uploadLog: &ul,
+		log:       log,
 	}
 
 	// Generate random bytes to act as our file
@@ -130,10 +138,17 @@ func TestServerUploadNoSaveNoWH(t *testing.T) {
 	cfg.UploadsDir = ""
 	cfg.UploadWebHooks = make(map[string]config.WebHookConfig) // Empty webhooks
 
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to create the log!: %v`, err)
+	}
+
 	ul := UploadLog{}
 	h := FileUploadHandler{
 		cfg:       cfg,
 		uploadLog: &ul,
+		log:       log,
 	}
 
 	// Generate random bytes to act as our file
@@ -203,10 +218,17 @@ func TestServerUploadNoWH(t *testing.T) {
 	cfg.UploadsDir = tmpDirUploads
 	cfg.UploadWebHooks = make(map[string]config.WebHookConfig) // Empty webhooks
 
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to create the log!: %v`, err)
+	}
+
 	ul := UploadLog{}
 	h := FileUploadHandler{
 		cfg:       cfg,
 		uploadLog: &ul,
+		log:       log,
 	}
 
 	// Generate random bytes to act as our file
@@ -303,10 +325,17 @@ func TestServerUploadNoWHBadScanDir(t *testing.T) {
 	cfg.UploadsDir = tmpDirUploads
 	cfg.UploadWebHooks = make(map[string]config.WebHookConfig) // Empty webhooks
 
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to create the log!: %v`, err)
+	}
+
 	ul := UploadLog{}
 	h := FileUploadHandler{
 		cfg:       cfg,
 		uploadLog: &ul,
+		log:       log,
 	}
 
 	// Generate random bytes to act as our file
@@ -394,6 +423,12 @@ func TestCreateAndRunHTTPServer(t *testing.T) {
 		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
 
+	// Create log
+	logger, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to create the log!: %v`, err)
+	}
+
 	cfg.UseVirusTotal = true
 	cfg.UploadVirusTotal = true
 	cfg.WebHookDir = ""
@@ -414,7 +449,7 @@ func TestCreateAndRunHTTPServer(t *testing.T) {
 	cfg.ServerPort = port
 
 	// Create HTTP server.
-	httpServer, err := CreateHTTPServer(cfg)
+	httpServer, err := CreateHTTPServer(cfg, logger)
 	if err != nil {
 		t.Fatalf("TestCreateAndRunHTTPServer CreateHTTPServer = %v!", err)
 	}

@@ -19,7 +19,7 @@ func TestAddFileTest(t *testing.T) {
 		logPath: "",
 	}
 
-	if err := u.AddFile("uploads/test.txt", "original.txt", "Whenever", "scans/scan.json", "123", "Results"); err != nil {
+	if err := u.AddFile("uploads/test.txt", "localhost", "original.txt", "Whenever", "scans/scan.json", "123", "Results"); err != nil {
 		t.Fatalf(`testAddFileTest = %v, want nil`, err)
 	}
 
@@ -27,6 +27,7 @@ func TestAddFileTest(t *testing.T) {
 	uploadVals := map[string]interface{}{
 		"Time Uploaded":     "Whenever",
 		"Original Filename": "original.txt",
+		"Uploader IP":       "localhost",
 		"Scan File":         "scans/scan.json",
 		"File Hash":         "123",
 		"Scan Type":         "Results", // Results for file already in VT, Analysis for queued/new upload.
@@ -48,11 +49,11 @@ func TestAddRepeatFile(t *testing.T) {
 		logPath: "",
 	}
 
-	if err := u.AddFile("uploads/test.txt", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
+	if err := u.AddFile("uploads/test.txt", "localhost", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
 		t.Fatalf(`testUpdateFileTest repeat add file failed on first file = %v, want nil`, err)
 	}
 
-	if err := u.AddFile("uploads/test.txt", "new.txt", "Whenever", "scans/scan.json", "123", "Results"); err == nil {
+	if err := u.AddFile("uploads/test.txt", "localhost", "new.txt", "Whenever", "scans/scan.json", "123", "Results"); err == nil {
 		t.Fatalf(`testAddFileTest repeat add existing file = nil, want %v`, &errors.UploadAlreadyInLog{})
 	}
 }
@@ -63,11 +64,11 @@ func TestUpdateFileTest(t *testing.T) {
 		logPath: "",
 	}
 
-	if err := u.AddFile("uploads/test.txt", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
+	if err := u.AddFile("uploads/test.txt", "localhost", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
 		t.Fatalf(`testUpdateFileTest adding new file = %v, want nil`, err)
 	}
 
-	if err := u.UpdateFile("uploads/test.txt", "new.txt", "Whenever", "scans/scan.json", "123", "Results"); err != nil {
+	if err := u.UpdateFile("uploads/test.txt", "localhost", "new.txt", "Whenever", "scans/scan.json", "123", "Results"); err != nil {
 		t.Fatalf(`testUpdateFileTest updating existing file = %v, want nil`, err)
 	}
 
@@ -96,7 +97,7 @@ func TestUpdateFileScan(t *testing.T) {
 		logPath: "",
 	}
 
-	if err := u.AddFile("uploads/test.txt", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
+	if err := u.AddFile("uploads/test.txt", "localhost", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
 		t.Fatalf(`testUpdateFileScan adding new file = %v, want nil`, err)
 	}
 
@@ -129,7 +130,7 @@ func TestSaveFileTest(t *testing.T) {
 		logPath: "",
 	}
 
-	if err := u.AddFile("uploads/test.txt", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
+	if err := u.AddFile("uploads/test.txt", "localhost", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
 		t.Fatalf(`testSaveFileTest add file failed = %v, want nil`, err)
 	}
 
@@ -144,7 +145,7 @@ func TestSaveFile(t *testing.T) {
 		logPath: filepath.Join(t.TempDir(), "log.log"),
 	}
 
-	if err := u.AddFile("uploads/test.txt", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
+	if err := u.AddFile("uploads/test.txt", "localhost", "original.txt", "Now", "scans/scan1.json", "321", "Analysis"); err != nil {
 		t.Fatalf(`TestSaveFile add file failed = %v, want nil`, err)
 	}
 

@@ -1,5 +1,6 @@
 {
     "ServerPort" : 8081,
+    "LogFile" : "log.log",
     "UploadLimitMB" : 512,
     "UseVirusTotal" : true,
     "UploadVirusTotal" : true,

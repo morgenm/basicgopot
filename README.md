@@ -60,6 +60,7 @@ The configuration for **_basicgopot_** is stored in `config/config.json`. An exa
 ```json
 {
     "ServerPort" : 8080, // The port the server runs on
+    "LogFile" : "log.log", // What file to save server logs to.
     "UploadLimitMB" : 512, // Size limit in Megabytes for a single file upload to the server
     "UseVirusTotal" : true, // Whether to use VirusTotal 
     "UploadVirusTotal" : true, // Whether to upload the sample to VirusTotal if it's unique

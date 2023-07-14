@@ -43,3 +43,6 @@ webhooks/
 
 # Test data for fuzzing
 */testdata/
+
+# All log files
+*.log
