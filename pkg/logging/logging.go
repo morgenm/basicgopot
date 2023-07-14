@@ -4,6 +4,7 @@ package logging
 import (
 	"log"
 	"os"
+	"path/filepath"
 )
 
 // Log will log strings to stdout or to a file, depending on what
@@ -13,13 +14,13 @@ type Log struct {
 	logFile *os.File
 }
 
-// New returns a pointer to a new log. If filepath = "", then
+// New returns a pointer to a new log. If logpath = "", then
 // log will output to stdout, else it will open the given file and write
 // logs to it.
-func New(filepath string) (*Log, error) {
-	if filepath != "" {
+func New(logpath string) (*Log, error) {
+	if logpath != "" {
 		// Open and create if needed.
-		f, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE, 0666)
+		f, err := os.OpenFile(filepath.Clean(logpath), os.O_WRONLY|os.O_CREATE, 0o600)
 		if err != nil {
 			return nil, err
 		}
