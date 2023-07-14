@@ -279,3 +279,99 @@ func TestCheckVirusTotalRandomFileNoUpload(t *testing.T) {
 		t.Fatalf(`TestCheckVirusTotalRandomFileNoUpload expected nil buffer output!`)
 	}
 }
+
+// TestCheckVirusBadUploadLog tests checkVirusTotal with a file hash not yet present on
+// vt by generating a random file, but does not add the file to the upload log beforehand.
+func TestCheckVirusRandBadUploadLog(t *testing.T) {
+	configPath := os.Getenv("BASICGOPOT_CONFIG_FILE")
+
+	if configPath == "" {
+		// Quite ugly, but using config.json from top level dir so we
+		// have access to the legitimate API key
+		configPath = "../../config/config.json"
+	}
+
+	cfg, err := config.ReadConfigFromFile(configPath)
+	if err != nil {
+		pwd, _ := os.Getwd()
+		t.Fatalf(`TestCheckVirusBadUploadLog with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
+	}
+
+	cfg.UploadVirusTotal = true
+	cfg.UseVirusTotal = true
+
+	// Generate random bytes to act as our file
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	const fileSize = 1024 * 512 // Will generate half a MB of random data
+	data := make([]byte, fileSize)
+	for i := 0; i < fileSize; i++ {
+		data[i] = byte(r.Intn(255 + 1))
+	}
+
+	// Get the hash to pass to VT
+	hasher := sha256.New()
+	_, err = hasher.Write(data)
+	if err != nil {
+		t.Fatalf(`TestCheckVirusBadUploadLog failed when generating random file with error %v`, err)
+	}
+	hash := fmt.Sprintf("%x", hasher.Sum(nil))
+
+	ul := UploadLog{}
+	var writer bytes.Buffer
+
+	err = checkVirusTotal(cfg, &ul, &writer, "scan", "uploadpath", hash, "", data)
+	expectedErr := &errors.UploadNotInLog{}
+	if !goerrors.As(err, &expectedErr) {
+		t.Fatalf(`TestCheckVirusBadUploadLog = %v, want %v`, err, expectedErr)
+	}
+}
+
+// TestCheckVirusRandTooBig tests checkVirusTotal with a file hash not yet present on
+// vt by generating a random file, but the file is too big for uploading
+func TestCheckVirusRandTooBig(t *testing.T) {
+	configPath := os.Getenv("BASICGOPOT_CONFIG_FILE")
+
+	if configPath == "" {
+		// Quite ugly, but using config.json from top level dir so we
+		// have access to the legitimate API key
+		configPath = "../../config/config.json"
+	}
+
+	cfg, err := config.ReadConfigFromFile(configPath)
+	if err != nil {
+		pwd, _ := os.Getwd()
+		t.Fatalf(`TestCheckVirusBadUploadLog with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
+	}
+
+	cfg.UploadVirusTotal = true
+	cfg.UseVirusTotal = true
+
+	// Generate random bytes to act as our file
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	const fileSize = 1024 * 1024 * 64 // Will generate 64 MB of random data
+	data := make([]byte, fileSize)
+	for i := 0; i < fileSize; i++ {
+		data[i] = byte(r.Intn(255 + 1))
+	}
+
+	// Get the hash to pass to VT
+	hasher := sha256.New()
+	_, err = hasher.Write(data)
+	if err != nil {
+		t.Fatalf(`TestCheckVirusBadUploadLog failed when generating random file with error %v`, err)
+	}
+	hash := fmt.Sprintf("%x", hasher.Sum(nil))
+
+	ul := UploadLog{}
+	if err = ul.AddFile("uploadpath", "original", "now", "scan", hash, "Scan"); err != nil {
+		t.Fatalf(`TestCheckVirusTotalRandomFileNoUpload adding file to uploas log returned %v`, err)
+	}
+
+	// Create temporary file for writing....
+
+	err = checkVirusTotal(cfg, &ul, nil, "scan", "uploadpath", hash, "", data)
+	expectedErr := &errors.FileTooBig{}
+	if !goerrors.As(err, &expectedErr) {
+		t.Fatalf(`TestCheckVirusBadUploadLog = %v, want %v`, err, expectedErr)
+	}
+}
