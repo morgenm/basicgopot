@@ -95,6 +95,8 @@ func UploadFileVirusTotal(apiKey string, fileName string, data []byte) (*io.Read
 
 	if resp.StatusCode == 401 {
 		return nil, &errors.VirusTotalAPIKeyError{}
+	} else if resp.StatusCode == 429 {
+		return nil, &errors.VirusTotalAPILimitExceeded{}
 	}
 
 	// Get analysis URL from response so we can download the report
