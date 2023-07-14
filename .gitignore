@@ -40,3 +40,6 @@ webhooks/
 
 # Binary
 /basicgopot
+
+# Test data for fuzzing
+*/testdata/

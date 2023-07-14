@@ -1,13 +1,16 @@
 package server
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/morgenm/basicgopot/pkg/config"
@@ -22,30 +25,25 @@ type FileUploadHandler struct {
 	uploadWebHookCallbacks []WebHookCallback
 }
 
-func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Set file size limit for the upload
-	if err := r.ParseMultipartForm(h.cfg.UploadLimitMB << 20); err != nil {
-		log.Print("Error parsing upload form!")
-		return
+type HTTPServer struct {
+	srv       *http.Server
+	uploadLog *UploadLog
+}
+
+// createScanWriter will create a scan file based on the current time and will return the writer
+// scanfilepath and nil on success, nil "" and error on failure.
+func createScanWriter(cfg *config.Config) (io.WriteCloser, string, error) {
+	scanFilename := time.Now().Format(time.UnixDate) + ".json"
+	scanFilepath := filepath.Clean(filepath.Join(cfg.ScanOutputDir, scanFilename))
+	outFile, err := os.Create(scanFilepath)
+	if err != nil { // Failed to create file
+		return nil, "", err
 	}
 
-	// Get file
-	file, handler, err := r.FormFile("fileupload")
-	if err != nil {
-		log.Print("File upload from user failed! ", err)
-		fmt.Fprintf(w, "File upload failed!")
-		return
-	}
-	defer file.Close()
-	log.Print("File being uploaded by user...")
+	return outFile, scanFilepath, nil
+}
 
-	// Read uploaded file to byte array
-	data, err := io.ReadAll(file)
-	if err != nil {
-		log.Print("Failed to read uploaded file!")
-		return
-	}
-
+func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, data []byte) {
 	// Get time to create the upload file name, and to store it in the upload log
 	timeUploaded := time.Now().Format(time.UnixDate)
 
@@ -76,14 +74,9 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		uploadFilepath = filepath.Clean(filepath.Join("uploads/", timeUploaded))
 	}
 
-	// Inform user of success by serving the upload success HTML file
-	http.Redirect(w, r, "uploaded.html", 303)
-	// fmt.Fprintf(w, "File uploaded!")
-	log.Print("File uploaded by user.")
-
 	// Get file hash
 	hasher := sha256.New()
-	_, err = hasher.Write(data)
+	_, err := hasher.Write(data)
 	if err != nil {
 		log.Print("Error getting file hash!")
 		return
@@ -96,13 +89,36 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	// Wait for upload hooks and VT goroutine
+	var wg sync.WaitGroup
+	if h.cfg.UseVirusTotal {
+		wg.Add(1)
+	}
+	if len(h.cfg.UploadWebHooks) > 0 {
+		wg.Add(1)
+	}
+
 	// Check VirusTotal
 	if h.cfg.UseVirusTotal {
 		go func() {
-			err := checkVirusTotal(h.cfg, h.uploadLog, uploadFilepath, hash, handler.Filename, data)
+			var scanWriter io.WriteCloser
+			var scanFilepath string
+			if h.cfg.ScanOutputDir == "" {
+				scanWriter = nil
+			} else {
+				if scanWriter, scanFilepath, err = createScanWriter(h.cfg); err != nil {
+					log.Print(err)
+					wg.Done()
+					return
+				}
+			}
+
+			err := checkVirusTotal(h.cfg, h.uploadLog, scanWriter, scanFilepath, uploadFilepath, hash, handler.Filename, data)
 			if err != nil {
 				log.Print(err)
 			}
+
+			wg.Done()
 		}()
 	}
 
@@ -111,11 +127,46 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			for _, webHook := range h.uploadWebHookCallbacks {
 				webHook(data, uploadFilepath)
 			}
+			wg.Done()
 		}()
 	}
+
+	wg.Wait()
 }
 
-func writeWebHookResponseToFile(cfg *config.Config, reader io.ReadCloser, webHookFileName string) error {
+func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Set file size limit for the upload
+	if err := r.ParseMultipartForm(h.cfg.UploadLimitMB << 20); err != nil {
+		log.Print("Error parsing upload form!")
+		return
+	}
+
+	// Get file
+	file, handler, err := r.FormFile("fileupload")
+	if err != nil {
+		log.Print("File upload from user failed! ", err)
+		fmt.Fprintf(w, "File upload failed!")
+		return
+	}
+	defer file.Close()
+	log.Print("File being uploaded by user...")
+
+	// Read uploaded file to byte array
+	data, err := io.ReadAll(file)
+	if err != nil {
+		log.Print("Failed to read uploaded file!")
+		return
+	}
+
+	// Inform user of success by serving the upload success HTML file
+	http.Redirect(w, r, "uploaded.html", 303)
+	// fmt.Fprintf(w, "File uploaded!")
+	log.Print("File uploaded by user.")
+
+	h.handleUploadFile(handler, data)
+}
+
+func writeWebHookResponseToFile(cfg *config.Config, reader io.Reader, webHookFileName string) error {
 	// Read the result
 	body, err := io.ReadAll(reader)
 	if err != nil {
@@ -138,22 +189,18 @@ func writeWebHookResponseToFile(cfg *config.Config, reader io.ReadCloser, webHoo
 	return nil
 }
 
-func RunServer(cfg *config.Config) {
+// CreateHTTPServer returns a pointer to a new HTTPServer. Takes config as input in order to define the upload log and WebHooks.
+func CreateHTTPServer(cfg *config.Config) (*HTTPServer, error) {
+	var httpServer HTTPServer
+
 	// Create upload log
-	uploadLog := UploadLog{
+	httpServer.uploadLog = &UploadLog{
 		logPath:      cfg.UploadLog,
 		saveInterval: 10,
 	}
-	if err := uploadLog.Load(); err != nil {
-		panic(err)
+	if err := httpServer.uploadLog.Load(); err != nil {
+		return nil, err
 	}
-
-	go func() {
-		err := uploadLog.SaveFileLoop()
-		if err != nil {
-			panic(err)
-		}
-	}()
 
 	// Create Upload WebHook callbacks
 	uploadWebHookCallbacks := []WebHookCallback{}
@@ -184,7 +231,7 @@ func RunServer(cfg *config.Config) {
 				return
 			}
 
-			if err = uploadLog.UpdateAddWebHookPath(uploadPath, webHookName, webHookFilename); err != nil {
+			if err = httpServer.uploadLog.UpdateAddWebHookPath(uploadPath, webHookName, webHookFilename); err != nil {
 				log.Print("Error updating UploadLog with WebHook filepath!")
 				return
 			}
@@ -192,7 +239,7 @@ func RunServer(cfg *config.Config) {
 	}
 
 	// Create FileUploadHandler to add route to mux.
-	fileUploadHandler := FileUploadHandler{cfg, &uploadLog, uploadWebHookCallbacks}
+	fileUploadHandler := FileUploadHandler{cfg, httpServer.uploadLog, uploadWebHookCallbacks}
 
 	// Create FileServer Handler to add route to mux
 	fileServer := http.FileServer(http.Dir("web/static"))
@@ -204,19 +251,45 @@ func RunServer(cfg *config.Config) {
 
 	// Create server itself
 	portStr := fmt.Sprintf(":%d", cfg.ServerPort)
-	server := &http.Server{
+
+	httpServer.srv = &http.Server{
 		Addr:         portStr,
 		Handler:      mux,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 
+	return &httpServer, nil
+}
+
+func (httpServer HTTPServer) RunServer(cfg *config.Config) {
+	// Run upload log save loop
+	go func() {
+		err := httpServer.uploadLog.SaveFileLoop()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	// Listen
-	log.Print("Server listening on port ", portStr)
-	if err := server.ListenAndServe(); err != nil {
-		log.Print("Error while listening and serving!")
+	log.Print("Server listening on ", httpServer.srv.Addr)
+	expectedErr := http.ErrServerClosed
+	if err := httpServer.srv.ListenAndServe(); err != nil && err.Error() != expectedErr.Error() {
+		log.Print("Error while listening and serving!: ", err)
+	}
+}
+
+func (httpServer HTTPServer) StopServer() {
+	log.Print("Shutting down server...")
+
+	httpServer.uploadLog.StopSaveFileLoop() // Stop upload log
+
+	if httpServer.srv == nil {
+		log.Print("Fatal error: HTTP server is nil!")
+		return
 	}
 
-	// Clean up
-	uploadLog.quitSavingLoop = true
+	if err := httpServer.srv.Shutdown(context.Background()); err != nil {
+		log.Print("Error while shutting down server: ", err)
+	}
 }

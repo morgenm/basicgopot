@@ -8,6 +8,9 @@ type (
 	// A VirusTotalAPIKeyError is an error indicating that VirusTotal did
 	// not accept the API key provided in the config.
 	VirusTotalAPIKeyError struct{}
+	// A VirusTotalAPILimitExceeded is an error indicating that the rate
+	// limit for the VirusTotal API key has been exceeded.
+	VirusTotalAPILimitExceeded struct{}
 	// A VirusTotalHashNotFound is an error indicating that the given hash
 	// is not present in VirusTotal.
 	VirusTotalHashNotFound struct{}
@@ -41,6 +44,10 @@ func (e *InvalidConfig) Error() string {
 
 func (e *VirusTotalAPIKeyError) Error() string {
 	return "VirusTotal authentication failure! Validate your API key in the config/config.json file!"
+}
+
+func (e *VirusTotalAPILimitExceeded) Error() string {
+	return "VirusTotal rate limit exceeded!"
 }
 
 func (e *VirusTotalHashNotFound) Error() string {

@@ -14,7 +14,7 @@ import (
 	"github.com/morgenm/basicgopot/pkg/errors"
 )
 
-// Test CheckHashVirusTotal using a file hash already on VT.
+// TestCheckHashVirusTotalKnownHash tests CheckHashVirusTotal using a file hash already on VT.
 func TestCheckHashVirusTotalKnownHash(t *testing.T) {
 	configPath := os.Getenv("BASICGOPOT_CONFIG_FILE")
 
@@ -36,6 +36,76 @@ func TestCheckHashVirusTotalKnownHash(t *testing.T) {
 	reader, err := CheckHashVirusTotal(cfg.VirusTotalApiKey, hash)
 	if err != nil {
 		t.Fatalf(`TestCheckVirusTotalKnownHash = %v, %v, want io.ReadCloser, nil`, reader, err)
+	}
+}
+
+// TestCheckHashVirusTotalKnownHashBadKey tests CheckHashVirusTotal using a file hash already on VT and an invalid key.
+func TestCheckHashVirusTotalKnownHashBadKey(t *testing.T) {
+	cfg := config.Config{
+		UseVirusTotal:    true,
+		UploadVirusTotal: false,
+		VirusTotalApiKey: "badkey",
+	}
+
+	// Define simple file already present on VT
+	hash := "55f8718109829bf506b09d8af615b9f107a266e19f7a311039d1035f180b22d4"
+
+	reader, err := CheckHashVirusTotal(cfg.VirusTotalApiKey, hash)
+	expectedErr := &errors.VirusTotalAPIKeyError{}
+	if !goerrors.As(err, &expectedErr) || reader != nil {
+		t.Fatalf(`TestCheckHashVirusTotalKnownHashBadKey = %v, %v, want nil, %v`, reader, err, expectedErr)
+	}
+}
+
+// TestCheckHashVirusTotalHashTooLong tests CheckHashVirusTotal using a bad file hash that is too long.
+func TestCheckHashVirusTotalHashTooLong(t *testing.T) {
+	configPath := os.Getenv("BASICGOPOT_CONFIG_FILE")
+
+	if configPath == "" {
+		// Quite ugly, but using config.json from top level dir so we
+		// have access to the legitimate API key
+		configPath = "../../config/config.json"
+	}
+
+	cfg, err := config.ReadConfigFromFile(configPath)
+	if err != nil {
+		pwd, _ := os.Getwd()
+		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
+	}
+
+	// Define simple file already present on VT
+	hash := "55f8718109829bf506b09d8af615b9f107a266e19f7a311039d1035f180ba12345"
+
+	reader, err := CheckHashVirusTotal(cfg.VirusTotalApiKey, hash)
+	expectedErr := &errors.InvalidHashError{}
+	if !goerrors.As(err, &expectedErr) || reader != nil {
+		t.Fatalf(`TestCheckHashVirusTotalHashTooLong = %v, %v, want io.ReadCloser, nil`, reader, err)
+	}
+}
+
+// TestCheckHashVirusTotalHashBad tests CheckHashVirusTotal using a hash with invalid chars.
+func TestCheckHashVirusTotalHashBad(t *testing.T) {
+	configPath := os.Getenv("BASICGOPOT_CONFIG_FILE")
+
+	if configPath == "" {
+		// Quite ugly, but using config.json from top level dir so we
+		// have access to the legitimate API key
+		configPath = "../../config/config.json"
+	}
+
+	cfg, err := config.ReadConfigFromFile(configPath)
+	if err != nil {
+		pwd, _ := os.Getwd()
+		t.Fatalf(`checkVirusTotal with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
+	}
+
+	// Define simple file already present on VT
+	hash := "lol8718109829bf5wab09d8af615b9f107a266e19f7a311039d1035f180b22d4"
+
+	reader, err := CheckHashVirusTotal(cfg.VirusTotalApiKey, hash)
+	expectedErr := &errors.InvalidHashError{}
+	if !goerrors.As(err, &expectedErr) || reader != nil {
+		t.Fatalf(`TestCheckHashVirusTotalHashBad = %v, %v, want io.ReadCloser, nil`, reader, err)
 	}
 }
 
