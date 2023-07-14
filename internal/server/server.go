@@ -26,6 +26,12 @@ type FileUploadHandler struct {
 	log                    *logging.Log
 }
 
+// FileServerHandler just wraps Go's FileServer with logging.
+type FileServerHandler struct {
+	fileServer http.Handler
+	log        *logging.Log
+}
+
 type HTTPServer struct {
 	srv       *http.Server
 	uploadLog *UploadLog
@@ -146,12 +152,12 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Get file
 	file, handler, err := r.FormFile("fileupload")
 	if err != nil {
-		h.log.Log("File upload from user failed! ", err)
+		h.log.Logf("File upload from %s failed!: %v", r.RemoteAddr, err)
 		fmt.Fprintf(w, "File upload failed!")
 		return
 	}
 	defer file.Close()
-	h.log.Log("File being uploaded by user...")
+	h.log.Logf("File being uploaded by %s...", r.RemoteAddr)
 
 	// Read uploaded file to byte array
 	data, err := io.ReadAll(file)
@@ -163,7 +169,7 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Inform user of success by serving the upload success HTML file
 	http.Redirect(w, r, "uploaded.html", 303)
 	// fmt.Fprintf(w, "File uploaded!")
-	h.log.Log("File uploaded by user.")
+	h.log.Logf("File uploaded by %s.", r.RemoteAddr)
 
 	h.handleUploadFile(handler, data)
 }
@@ -189,6 +195,11 @@ func writeWebHookResponseToFile(cfg *config.Config, reader io.Reader, webHookFil
 	}
 
 	return nil
+}
+
+func (h FileServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.log.Logf("%s request at %s from %s", r.Method, r.URL, r.RemoteAddr)
+	h.fileServer.ServeHTTP(w, r)
 }
 
 // CreateHTTPServer returns a pointer to a new HTTPServer. Takes config as input in order to define the upload log and WebHooks.
@@ -247,7 +258,8 @@ func CreateHTTPServer(cfg *config.Config, log *logging.Log) (*HTTPServer, error)
 	fileUploadHandler := FileUploadHandler{cfg, httpServer.uploadLog, uploadWebHookCallbacks, log}
 
 	// Create FileServer Handler to add route to mux
-	fileServer := http.FileServer(http.Dir("web/static"))
+	// fileServer := http.FileServer(http.Dir("web/static"))
+	fileServer := FileServerHandler{http.FileServer(http.Dir("web/static")), log}
 
 	// Create mux for server
 	mux := http.NewServeMux()
