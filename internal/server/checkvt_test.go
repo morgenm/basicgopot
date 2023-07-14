@@ -13,6 +13,7 @@ import (
 
 	"github.com/morgenm/basicgopot/pkg/config"
 	"github.com/morgenm/basicgopot/pkg/errors"
+	"github.com/morgenm/basicgopot/pkg/logging"
 )
 
 func TestWriteVTResult(t *testing.T) {
@@ -30,9 +31,15 @@ func TestWriteVTResult(t *testing.T) {
 }
 
 func TestCheckVirusTotalHashTooLong(t *testing.T) {
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestCheckVirusTotalHashTooLong, failed to create the log!: %v`, err)
+	}
+
 	expectedErr := &errors.InvalidHashError{}
 	hash := string(make([]byte, 100))
-	err := checkVirusTotal(nil, nil, nil, "", "", hash, "", []byte{})
+	err = checkVirusTotal(nil, log, nil, nil, "", "", hash, "", []byte{})
 	if err == nil {
 		t.Fatalf(`TestCheckVirusTotalHashTooLong = nil want %v`, expectedErr)
 	}
@@ -43,10 +50,16 @@ func TestCheckVirusTotalHashTooLong(t *testing.T) {
 }
 
 func TestCheckVirusTotalBadKey(t *testing.T) {
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestCheckVirusTotalBadKey, failed to create the log!: %v`, err)
+	}
+
 	expectedErr := &errors.VirusTotalAPIKeyError{}
 	cfg := config.Config{}
 	hash := "55f8718109829bf506b09d8af615b9f107a266e19f7a311039d1035f180b22d4"
-	err := checkVirusTotal(&cfg, nil, nil, "", "", hash, "", []byte{})
+	err = checkVirusTotal(&cfg, log, nil, nil, "", "", hash, "", []byte{})
 	if err == nil {
 		t.Fatalf(`TestCheckVirusTotalBadKey = nil want %v`, expectedErr)
 	}
@@ -72,6 +85,12 @@ func TestCheckVirusTotalKnownHash(t *testing.T) {
 	}
 	cfg.UseVirusTotal = true
 
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestCheckVirusTotalKnownHash, failed to create the log!: %v`, err)
+	}
+
 	hash := "55f8718109829bf506b09d8af615b9f107a266e19f7a311039d1035f180b22d4" // Define simple file already present on VT
 	ul := UploadLog{}
 	if err = ul.AddFile("uploadpath", "original", "now", "scan", hash, "Scan"); err != nil {
@@ -79,7 +98,7 @@ func TestCheckVirusTotalKnownHash(t *testing.T) {
 	}
 	var writer bytes.Buffer
 
-	err = checkVirusTotal(cfg, &ul, &writer, "scan", "uploadpath", hash, "", []byte{})
+	err = checkVirusTotal(cfg, log, &ul, &writer, "scan", "uploadpath", hash, "", []byte{})
 	if err != nil {
 		t.Fatalf(`TestCheckVirusTotalKnownHash = %v, want nil`, err)
 	}
@@ -111,13 +130,19 @@ func TestCheckVirusTotalKnownHashNoOutput(t *testing.T) {
 	}
 	cfg.UseVirusTotal = true
 
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestCheckVirusTotalKnownHashNoOutput, failed to create the log!: %v`, err)
+	}
+
 	hash := "55f8718109829bf506b09d8af615b9f107a266e19f7a311039d1035f180b22d4" // Define simple file already present on VT
 	ul := UploadLog{}
 	if err = ul.AddFile("uploadpath", "original", "now", "scan", hash, "Scan"); err != nil {
 		t.Fatalf(`TestCheckVirusTotalKnownHashNoOutput adding file to uploas log returned %v`, err)
 	}
 
-	err = checkVirusTotal(cfg, &ul, nil, "scan", "uploadpath", hash, "", []byte{})
+	err = checkVirusTotal(cfg, log, &ul, nil, "scan", "uploadpath", hash, "", []byte{})
 	if err != nil {
 		t.Fatalf(`TestCheckVirusTotalKnownHashNoOutput = %v, want nil`, err)
 	}
@@ -143,6 +168,12 @@ func TestCheckVirusTotalRandomFile(t *testing.T) {
 	cfg.UploadVirusTotal = true
 	cfg.UseVirusTotal = true
 
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestCheckVirusTotalRandomFile, failed to create the log!: %v`, err)
+	}
+
 	// Generate random bytes to act as our file
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	const fileSize = 1024 * 512 // Will generate half a MB of random data
@@ -165,7 +196,7 @@ func TestCheckVirusTotalRandomFile(t *testing.T) {
 	}
 	var writer bytes.Buffer
 
-	err = checkVirusTotal(cfg, &ul, &writer, "scan", "uploadpath", hash, "", data)
+	err = checkVirusTotal(cfg, log, &ul, &writer, "scan", "uploadpath", hash, "", data)
 	if err != nil {
 		t.Fatalf(`TestCheckVirusTotalRandomFile = %v, want nil`, err)
 	}
@@ -193,11 +224,17 @@ func TestCheckVirusTotalRandomFileNoOutput(t *testing.T) {
 	cfg, err := config.ReadConfigFromFile(configPath)
 	if err != nil {
 		pwd, _ := os.Getwd()
-		t.Fatalf(`TestCheckVirusTotalRandomFile with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
+		t.Fatalf(`TestCheckVirusTotalRandomFileNoOutput with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
 
 	cfg.UploadVirusTotal = true
 	cfg.UseVirusTotal = true
+
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestCheckVirusTotalRandomFileNoOutput, failed to create the log!: %v`, err)
+	}
 
 	// Generate random bytes to act as our file
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -211,18 +248,18 @@ func TestCheckVirusTotalRandomFileNoOutput(t *testing.T) {
 	hasher := sha256.New()
 	_, err = hasher.Write(data)
 	if err != nil {
-		t.Fatalf(`checkVirusTotal test with random file failed when generating random file with error %v`, err)
+		t.Fatalf(`TestCheckVirusTotalRandomFileNoOutput test with random file failed when generating random file with error %v`, err)
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
 	ul := UploadLog{}
 	if err = ul.AddFile("uploadpath", "original", "now", "scan", hash, "Scan"); err != nil {
-		t.Fatalf(`TestCheckVirusTotalKnownHash adding file to uploas log returned %v`, err)
+		t.Fatalf(`TestCheckVirusTotalRandomFileNoOutput adding file to uploas log returned %v`, err)
 	}
 
-	err = checkVirusTotal(cfg, &ul, nil, "scan", "uploadpath", hash, "", data)
+	err = checkVirusTotal(cfg, log, &ul, nil, "scan", "uploadpath", hash, "", data)
 	if err != nil {
-		t.Fatalf(`TestCheckVirusTotalRandomFile = %v, want nil`, err)
+		t.Fatalf(`TestCheckVirusTotalRandomFileNoOutput = %v, want nil`, err)
 	}
 }
 
@@ -246,6 +283,12 @@ func TestCheckVirusTotalRandomFileNoUpload(t *testing.T) {
 	cfg.UploadVirusTotal = false
 	cfg.UseVirusTotal = true
 
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestCheckVirusTotalRandomFileNoUpload, failed to create the log!: %v`, err)
+	}
+
 	// Generate random bytes to act as our file
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	const fileSize = 1024 * 512 // Will generate half a MB of random data
@@ -268,7 +311,7 @@ func TestCheckVirusTotalRandomFileNoUpload(t *testing.T) {
 	}
 	var writer bytes.Buffer
 
-	err = checkVirusTotal(cfg, &ul, &writer, "scan", "uploadpath", hash, "", data)
+	err = checkVirusTotal(cfg, log, &ul, &writer, "scan", "uploadpath", hash, "", data)
 	if err != nil {
 		t.Fatalf(`TestCheckVirusTotalRandomFileNoUpload = %v, want nil`, err)
 	}
@@ -298,6 +341,12 @@ func TestCheckVirusRandBadUploadLog(t *testing.T) {
 	cfg.UploadVirusTotal = true
 	cfg.UseVirusTotal = true
 
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestCheckVirusBadUploadLog, failed to create the log!: %v`, err)
+	}
+
 	// Generate random bytes to act as our file
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	const fileSize = 1024 * 512 // Will generate half a MB of random data
@@ -317,7 +366,7 @@ func TestCheckVirusRandBadUploadLog(t *testing.T) {
 	ul := UploadLog{}
 	var writer bytes.Buffer
 
-	err = checkVirusTotal(cfg, &ul, &writer, "scan", "uploadpath", hash, "", data)
+	err = checkVirusTotal(cfg, log, &ul, &writer, "scan", "uploadpath", hash, "", data)
 	expectedErr := &errors.UploadNotInLog{}
 	if !goerrors.As(err, &expectedErr) {
 		t.Fatalf(`TestCheckVirusBadUploadLog = %v, want %v`, err, expectedErr)
@@ -338,11 +387,17 @@ func TestCheckVirusRandTooBig(t *testing.T) {
 	cfg, err := config.ReadConfigFromFile(configPath)
 	if err != nil {
 		pwd, _ := os.Getwd()
-		t.Fatalf(`TestCheckVirusBadUploadLog with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
+		t.Fatalf(`TestCheckVirusRandTooBig with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
 
 	cfg.UploadVirusTotal = true
 	cfg.UseVirusTotal = true
+
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestCheckVirusRandTooBig, failed to create the log!: %v`, err)
+	}
 
 	// Generate random bytes to act as our file
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -356,20 +411,20 @@ func TestCheckVirusRandTooBig(t *testing.T) {
 	hasher := sha256.New()
 	_, err = hasher.Write(data)
 	if err != nil {
-		t.Fatalf(`TestCheckVirusBadUploadLog failed when generating random file with error %v`, err)
+		t.Fatalf(`TestCheckVirusRandTooBig failed when generating random file with error %v`, err)
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
 	ul := UploadLog{}
 	if err = ul.AddFile("uploadpath", "original", "now", "scan", hash, "Scan"); err != nil {
-		t.Fatalf(`TestCheckVirusTotalRandomFileNoUpload adding file to uploas log returned %v`, err)
+		t.Fatalf(`TestCheckVirusRandTooBig adding file to uploas log returned %v`, err)
 	}
 
 	// Create temporary file for writing....
 
-	err = checkVirusTotal(cfg, &ul, nil, "scan", "uploadpath", hash, "", data)
+	err = checkVirusTotal(cfg, log, &ul, nil, "scan", "uploadpath", hash, "", data)
 	expectedErr := &errors.FileTooBig{}
 	if !goerrors.As(err, &expectedErr) {
-		t.Fatalf(`TestCheckVirusBadUploadLog = %v, want %v`, err, expectedErr)
+		t.Fatalf(`TestCheckVirusRandTooBig = %v, want %v`, err, expectedErr)
 	}
 }

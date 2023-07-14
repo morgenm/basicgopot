@@ -42,7 +42,7 @@ func main() {
 	if cfg.UploadsDir != "" {
 		if _, err := os.Stat(cfg.UploadsDir); os.IsNotExist(err) {
 			if err := os.Mkdir(cfg.UploadsDir, 0o750); err != nil {
-				log.Print("Fatal error: Could not create uploads directory and it does not already exist!")
+				l.Log("Fatal error: Could not create uploads directory and it does not already exist!")
 				return
 			}
 		}
@@ -52,7 +52,7 @@ func main() {
 	if cfg.ScanOutputDir != "" {
 		if _, err := os.Stat(cfg.ScanOutputDir); os.IsNotExist(err) {
 			if err := os.Mkdir(cfg.ScanOutputDir, 0o750); err != nil {
-				log.Print("Fatal error: Could not create scans directory and it does not already exist!")
+				l.Log("Fatal error: Could not create scans directory and it does not already exist!")
 				return
 			}
 		}
@@ -62,7 +62,7 @@ func main() {
 	if cfg.WebHookDir != "" {
 		if _, err := os.Stat(cfg.WebHookDir); os.IsNotExist(err) {
 			if err := os.Mkdir(cfg.WebHookDir, 0o750); err != nil {
-				log.Print("Fatal error: Could not create webhooks directory and it does not already exist!")
+				l.Log("Fatal error: Could not create webhooks directory and it does not already exist!")
 				return
 			}
 		}
@@ -72,7 +72,7 @@ func main() {
 	var wg sync.WaitGroup
 	httpServer, err := server.CreateHTTPServer(cfg, l)
 	if err != nil {
-		log.Print("Fatal error: Could not create HTTP server!")
+		l.Log("Fatal error: Could not create HTTP server!")
 		return
 	}
 	wg.Add(1)

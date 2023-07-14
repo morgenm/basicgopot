@@ -2,12 +2,12 @@ package server
 
 import (
 	"io"
-	"log"
 
 	goerrors "errors"
 
 	"github.com/morgenm/basicgopot/pkg/config"
 	"github.com/morgenm/basicgopot/pkg/errors"
+	"github.com/morgenm/basicgopot/pkg/logging"
 	"github.com/morgenm/basicgopot/pkg/vt"
 )
 
@@ -26,14 +26,14 @@ func writeVTResult(reader io.Reader, writer io.Writer) error {
 	return nil
 }
 
-func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, scanWriter io.Writer, scanFilepath string, uploadFilepath string, hash string, outFileName string, data []byte) error {
+func checkVirusTotal(cfg *config.Config, log *logging.Log, uploadLog *UploadLog, scanWriter io.Writer, scanFilepath string, uploadFilepath string, hash string, outFileName string, data []byte) error {
 	// Check if valid hash
 	if len(hash) != 64 {
 		return &errors.InvalidHashError{}
 	}
 
 	// Check if on VirusTotal
-	log.Print("Checking hash against VirusTotal...")
+	log.Log("Checking hash against VirusTotal...")
 	errHashNotFound := &errors.VirusTotalHashNotFound{}
 	reader, err := vt.CheckHashVirusTotal(cfg.VirusTotalApiKey, hash)
 	if err != nil && !goerrors.As(err, &errHashNotFound) {
@@ -47,7 +47,7 @@ func checkVirusTotal(cfg *config.Config, uploadLog *UploadLog, scanWriter io.Wri
 			return err
 		}
 
-		log.Print("File analysis retrieved from VirusTotal, writing scan results.")
+		log.Log("File analysis retrieved from VirusTotal, writing scan results.")
 		if err = uploadLog.UpdateFileScan(uploadFilepath, scanFilepath, "Scan"); err != nil {
 			return err
 		}

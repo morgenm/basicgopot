@@ -115,7 +115,7 @@ func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, data 
 				}
 			}
 
-			err := checkVirusTotal(h.cfg, h.uploadLog, scanWriter, scanFilepath, uploadFilepath, hash, handler.Filename, data)
+			err := checkVirusTotal(h.cfg, h.log, h.uploadLog, scanWriter, scanFilepath, uploadFilepath, hash, handler.Filename, data)
 			if err != nil {
 				h.log.Log(err)
 			}
