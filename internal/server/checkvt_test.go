@@ -327,7 +327,7 @@ func TestCheckVirusRandBadUploadLog(t *testing.T) {
 }
 
 // TestCheckVirusRandTooBig tests checkVirusTotal with a file hash not yet present on
-// vt by generating a random file, but the file is too big for uploading
+// vt by generating a random file, but the file is too big for uploading.
 func TestCheckVirusRandTooBig(t *testing.T) {
 	configPath := os.Getenv("BASICGOPOT_CONFIG_FILE")
 
