@@ -19,7 +19,15 @@ type UploadLog struct {
 	saveInterval   int // Save every so many seconds
 }
 
-// Add file to UploadLog. Returns err if already in log.
+// IsInLog returns true if the given upload path is already in the log, false otherwise.
+func (uploadLog *UploadLog) IsInLog(uploadPath string) bool {
+	uploadLog.mutx.Lock()
+	_, ok := uploadLog.uploads[uploadPath]
+	uploadLog.mutx.Unlock()
+	return ok
+}
+
+// AddFile adds the given file info to UploadLog. Returns err if already in log.
 func (uploadLog *UploadLog) AddFile(uploadPath string, uploaderIP string, originalFilename string, timeUpload string, scanPath string, hash string, scanType string) error {
 	uploadLog.mutx.Lock()
 	defer uploadLog.mutx.Unlock()
@@ -186,16 +194,16 @@ func (uploadLog *UploadLog) Load() error {
 	}
 	defer f.Close()
 
-	// Read the uploadLog file
-	scanner := bufio.NewScanner(f)
-	var data []byte
-
-	for scanner.Scan() { // Reading line-by-line
-		line := scanner.Bytes()
-		data = append(data, line...)
-		data = append(data, '\n')
+	// Get file size.
+	stat, err := f.Stat()
+	if err != nil {
+		return err
 	}
-	if err = scanner.Err(); err != nil {
+
+	// Read the uploadLog file
+	data := make([]byte, stat.Size())
+
+	if _, err = bufio.NewReader(f).Read(data); err != nil {
 		return err
 	}
 

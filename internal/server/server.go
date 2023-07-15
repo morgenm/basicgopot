@@ -51,16 +51,43 @@ func createScanWriter(cfg *config.Config) (io.WriteCloser, string, error) {
 	return outFile, scanFilepath, nil
 }
 
+func GetUploadFilePath(uploadLog *UploadLog, uploadsDir string, timeUploaded string) string {
+	var uploadFilepath string
+
+	if uploadsDir != "" {
+		// Uploads directory exists, so use that.
+		uploadFilepath = filepath.Clean(filepath.Join(uploadsDir, timeUploaded))
+	} else {
+		// We are still using uploadFilepath as the key value to the uploadLog. So, pass uploads/... as the path.
+		uploadFilepath = filepath.Clean(filepath.Join("uploads/", timeUploaded))
+	}
+
+	// If another file is in the log with the same name (uploaded at same time as another file),
+	// append a counter to the end of the filepath to make the name unique.
+	counter := 1
+	originalUploadFilepath := uploadFilepath
+	for {
+		if !uploadLog.IsInLog(uploadFilepath) {
+			break
+		} else {
+			uploadFilepath = originalUploadFilepath + fmt.Sprintf(" - %d", counter)
+			counter += 1
+		}
+	}
+
+	return uploadFilepath
+}
+
 func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, uploaderIP string, data []byte) {
 	// Get time to create the upload file name, and to store it in the upload log
 	timeUploaded := time.Now().Format(time.UnixDate)
 
-	// Write file to uploads dir, if that is set in config
-	uploadFilepath := ""
+	// Get upload filepath based on upload directory and time uploaded.
+	uploadFilepath := GetUploadFilePath(h.uploadLog, h.cfg.UploadsDir, timeUploaded)
+
+	// Save file to upload dir if it exists.
 	if h.cfg.UploadsDir != "" {
-		// Create file for writing.
-		uploadFilepath = filepath.Clean(filepath.Join(h.cfg.UploadsDir, timeUploaded))
-		outFile, err := os.Create(uploadFilepath)
+		outFile, err := os.Create(filepath.Clean(uploadFilepath))
 		if err != nil {
 			h.log.Log("Failed to create file!")
 			return
@@ -76,10 +103,6 @@ func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, uploa
 			h.log.Log("Error closing the new uploaded file!")
 			return
 		}
-	} else {
-		// We are still using uploadFilepath as the key value to the uploadLog. So, pass uploads/... as the path.
-		// This is not a great solution, but keeping this here until I think of a better key
-		uploadFilepath = filepath.Clean(filepath.Join("uploads/", timeUploaded))
 	}
 
 	// Get file hash
@@ -146,6 +169,8 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Set file size limit for the upload
 	if err := r.ParseMultipartForm(h.cfg.UploadLimitMB << 20); err != nil {
 		h.log.Log("Error parsing upload form!")
+		w.WriteHeader(400)
+		fmt.Fprintf(w, "File upload failed!")
 		return
 	}
 
@@ -153,6 +178,7 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	file, handler, err := r.FormFile("fileupload")
 	if err != nil {
 		h.log.Logf("File upload from %s failed!: %v", r.RemoteAddr, err)
+		w.WriteHeader(400)
 		fmt.Fprintf(w, "File upload failed!")
 		return
 	}
@@ -163,6 +189,8 @@ func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	data, err := io.ReadAll(file)
 	if err != nil {
 		h.log.Log("Failed to read uploaded file!")
+		w.WriteHeader(400)
+		fmt.Fprintf(w, "File upload failed!")
 		return
 	}
 

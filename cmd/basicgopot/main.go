@@ -72,7 +72,7 @@ func main() {
 	var wg sync.WaitGroup
 	httpServer, err := server.CreateHTTPServer(cfg, l)
 	if err != nil {
-		l.Log("Fatal error: Could not create HTTP server!")
+		l.Logf("Fatal error: Could not create HTTP server!: %v", err)
 		return
 	}
 	wg.Add(1)
