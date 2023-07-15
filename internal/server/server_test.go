@@ -463,7 +463,7 @@ func TestCreateAndRunHTTPServer(t *testing.T) {
 		httpServer.RunServer(cfg)
 	}()
 
-	// Test connection to server.
+	// Test connection to server. Since no web content is being served in this test, GET upload which should return 400.
 	client := &http.Client{}
 	url := "http://localhost:" + fmt.Sprint(cfg.ServerPort) + "/upload"
 	req, err := http.NewRequest("GET", url, nil)
@@ -475,8 +475,8 @@ func TestCreateAndRunHTTPServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TestCreateAndRunHTTPServer error in GET request to server = %v!", err)
 	}
-	if resp.StatusCode != 200 {
-		t.Fatalf("TestCreateAndRunHTTPServer GET request status code = %d, not 200!", resp.StatusCode)
+	if resp.StatusCode != 400 {
+		t.Fatalf("TestCreateAndRunHTTPServer GET request status code = %d, not 400!", resp.StatusCode)
 	}
 
 	// Shutdown and wait for HTTP server.

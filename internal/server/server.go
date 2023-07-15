@@ -286,7 +286,6 @@ func CreateHTTPServer(cfg *config.Config, log *logging.Log) (*HTTPServer, error)
 	fileUploadHandler := FileUploadHandler{cfg, httpServer.uploadLog, uploadWebHookCallbacks, log}
 
 	// Create FileServer Handler to add route to mux
-	// fileServer := http.FileServer(http.Dir("web/static"))
 	fileServer := FileServerHandler{http.FileServer(http.Dir("web/static")), log}
 
 	// Create mux for server
