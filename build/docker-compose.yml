@@ -1,0 +1,10 @@
+services:
+  basicgopot:
+    container_name: basicgopot
+    image: morgenm/basicgopot:latest
+    ports:
+      - 8080:8080
+    volumes:
+      - ${BASICGOPOT_LOC}/logs:/logs
+      - ${BASICGOPOT_LOC}/uploads:/uploads
+      - ${BASICGOPOT_LOC}/config:/config

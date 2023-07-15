@@ -24,6 +24,22 @@ You can grab the latest release for this project from GitHub and just run the ex
 go install github.com/morgenm/basicgopot/cmd/basicgopot@latest
 ```
 
+### Docker-compose
+To run with docker-compose, copy the compose file located in `build/docker-compose.yml`.
+
+You can either set the location to the basicgopot files with:
+```bash
+export BASICGOPOT_LOC=/path/to/basicgopot
+```
+or edit the values in `build/docker-compose.yml`.
+
+You will need to copy the example config to wherever you specify your `config` directory to be located and rename the file to `config.json`. By default, all logs will be saved to what you specify as the `logs` directory and uploads will be in `uploads`.
+
+Run the following command to start the server:
+```bash
+docker compose up -d
+```
+
 ### Docker image
 
 Get the docker image by running:
@@ -33,8 +49,7 @@ docker pull morgenm/basicgopot:latest
 
 To run the docker image:
 ```bash
-echo "{}" > uploads.json
-docker run --publish 8080:8080 -v $(pwd)/config:/config -v $(pwd)/uploads:/uploads-docker:rw -v $(pwd)/scans:/scans -v $(pwd)/uploads.json:/uploads.json basicgopot
+docker run -p 8080:8080 -v $(pwd)/config:/config -v $(pwd)/uploads:/uploads:rw -v $(pwd)/logs:/logs morgenm/basicgopot:latest
 ```
 The `echo` command must be run the first time the server is run because `uploads.json` must exist for it to not be mapped as a directory by docker.
 
@@ -60,15 +75,15 @@ The configuration for **_basicgopot_** is stored in `config/config.json`. An exa
 ```json
 {
     "ServerPort" : 8080, // The port the server runs on
-    "LogFile" : "log.log", // What file to save server logs to.
+    "LogFile" : "logs/log.log", // What file to save server logs to.
     "UploadLimitMB" : 512, // Size limit in Megabytes for a single file upload to the server
     "UseVirusTotal" : true, // Whether to use VirusTotal 
     "UploadVirusTotal" : true, // Whether to upload the sample to VirusTotal if it's unique
     "VirusTotalApiKey" : "lol", // VirusTotal user API key (needed if UseVirusTotal is true)
-    "ScanOutputDir" : "scans/", // Directory to store downloaded VirusTotal scans in 
+    "ScanOutputDir" : "logs/scans/", // Directory to store downloaded VirusTotal scans in 
     "UploadsDir" : "uploads/", // Directory to store files uploaded to the server
-    "UploadLog" : "uploads.json", // File for logging upload and scan/analysis information
-    "WebHookDir" : "webhooks/", // Directory to save WebHook responses
+    "UploadLog" : "logs/uploads.json", // File for logging upload and scan/analysis information
+    "WebHookDir" : "logs/webhooks/", // Directory to save WebHook responses
     "UploadWebHooks" : { // WebHook definitions. Set to {} for no WebHooks.
         "Flask" : { // Unique WebHook Name
             "URL" : "http://localhost:5000",

@@ -1,27 +1,13 @@
 {
-    "ServerPort" : 8081,
-    "LogFile" : "log.log",
+    "ServerPort" : 8080,
+    "LogFile" : "logs/log.log",
     "UploadLimitMB" : 512,
     "UseVirusTotal" : true,
     "UploadVirusTotal" : true,
     "VirusTotalApiKey" : "lol",
-    "ScanOutputDir" : "scans/",
+    "ScanOutputDir" : "logs/scans/",
     "UploadsDir" : "uploads/",
-    "UploadLog" : "uploads.json",
-    "WebHookDir" : "webhooks/",
-    "UploadWebHooks" : { 
-        "Flask" : {
-            "URL" : "http://localhost:5000",
-            "Method" : "POST",
-            "Headers" : {
-                "api-key": "api-key",
-                "user-agent": "basicgopot",
-                "accept": "*/*"
-            },
-            "Forms" : {
-                "test" : "test field",
-                "file" : "$FILE"
-            }
-        }  
-    }
+    "UploadLog" : "logs/uploads.json",
+    "WebHookDir" : "logs/webhooks/",
+    "UploadWebHooks" : {}
 }
