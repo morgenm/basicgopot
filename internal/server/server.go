@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"io/fs"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -33,6 +34,7 @@ type FileUploadHandler struct {
 type FileServerHandler struct {
 	fileServer http.Handler
 	log        *logging.Log
+	fsys       *fs.FS
 }
 
 type HTTPServer struct {
@@ -256,7 +258,16 @@ func writeWebHookResponseToFile(cfg *config.Config, reader io.Reader, webHookFil
 func (h FileServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.log.Logf("%s request at %s from %s", r.Method, r.URL, r.RemoteAddr)
 
-	h.fileServer.ServeHTTP(w, r)
+	// Make sure requested file exists, if not return 404.
+	if filepath.Clean(r.URL.Path) == "/" {
+		h.fileServer.ServeHTTP(w, r)
+	} else if _, err := fs.Stat(*h.fsys, filepath.Clean(r.URL.Path[1:])); os.IsNotExist(err) { // Stat file. Remove first ('/').
+		http.Redirect(w, r, "/404.html", http.StatusPermanentRedirect)
+	} else if err != nil {
+		h.log.Logf("%v %v %s", err, *h.fsys, filepath.Clean(r.URL.Path))
+	} else {
+		h.fileServer.ServeHTTP(w, r)
+	}
 }
 
 // CreateHTTPServer returns a pointer to a new HTTPServer. Takes config as input in order to define the upload log and WebHooks.
@@ -376,7 +387,8 @@ func CreateHTTPServer(cfg *config.Config, log *logging.Log) (*HTTPServer, error)
 	}
 
 	// Create FileServer Handler to add route to mux
-	fileServer := FileServerHandler{http.FileServer(http.Dir("web/static")), log}
+	fsys := os.DirFS("web/static")
+	fileServer := FileServerHandler{http.FileServer(http.FS(fsys)), log, &fsys}
 
 	// Create mux for server
 	mux := http.NewServeMux()
