@@ -265,7 +265,9 @@ func (h FileServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else if _, err := fs.Stat(*h.fsys, filepath.Clean(r.URL.Path[1:])); os.IsNotExist(err) { // Stat file. Remove first ('/').
 		// Return a 404 page
 		w.WriteHeader(404)
-		w.Write(h.missingData)
+		if _, err = w.Write(h.missingData); err != nil {
+			h.log.Logf("Error writing 404 page! %v", err)
+		}
 	} else if err != nil {
 		h.log.Logf("%v %v %s", err, *h.fsys, filepath.Clean(r.URL.Path)) // Error performing stat.
 	} else {
