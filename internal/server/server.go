@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"context"
 	"crypto/sha256"
 	"fmt"
@@ -24,6 +25,8 @@ type FileUploadHandler struct {
 	uploadLog              *UploadLog
 	uploadWebHookCallbacks []WebHookCallback
 	log                    *logging.Log
+	uploadFailedHTMLData   []byte
+	uploadSuccessHTMLData  []byte
 }
 
 // FileServerHandler just wraps Go's FileServer with logging.
@@ -166,38 +169,60 @@ func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, uploa
 }
 
 func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Set file size limit for the upload
-	if err := r.ParseMultipartForm(h.cfg.UploadLimitMB << 20); err != nil {
-		h.log.Log("Error parsing upload form!")
-		w.WriteHeader(400)
-		fmt.Fprintf(w, "File upload failed!")
-		return
-	}
-
-	// Get file
-	file, handler, err := r.FormFile("fileupload")
-	if err != nil {
-		h.log.Logf("File upload from %s failed!: %v", r.RemoteAddr, err)
-		w.WriteHeader(400)
-		fmt.Fprintf(w, "File upload failed!")
-		return
-	}
-	defer file.Close()
 	h.log.Logf("File being uploaded by %s...", r.RemoteAddr)
 
-	// Read uploaded file to byte array
-	data, err := io.ReadAll(file)
-	if err != nil {
-		h.log.Log("Failed to read uploaded file!")
+	// Make sure this is a POST request
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed!", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Set maximum upload size
+	r.Body = http.MaxBytesReader(w, r.Body, h.cfg.UploadLimitMB<<20)
+
+	// Max memory used by server here is 2GB
+	if err := r.ParseMultipartForm(2048 << 20); err != nil {
+		h.log.Logf("Error parsing upload form from %s! %v. Max file size = %d MB", r.RemoteAddr, err, h.cfg.UploadLimitMB)
+
 		w.WriteHeader(400)
-		fmt.Fprintf(w, "File upload failed!")
+		_, err := w.Write(h.uploadFailedHTMLData)
+		if err != nil {
+			h.log.Logf("Error: could not serve file upload failure HTML file. %v", err)
+			_, err = w.Write([]byte("File upload failed!"))
+			if err != nil {
+				h.log.Logf("Error: could not serve file upload failure string. %v", err)
+			}
+		}
+
 		return
 	}
 
 	// Inform user of success by serving the upload success HTML file
-	http.Redirect(w, r, "uploaded.html", 303)
-	// fmt.Fprintf(w, "File uploaded!")
+	w.WriteHeader(200)
+	_, err := w.Write(h.uploadSuccessHTMLData)
 	h.log.Logf("File uploaded by %s.", r.RemoteAddr)
+	if err != nil {
+		h.log.Logf("Error: could not serve file upload success HTML file. %v", err)
+		_, err = w.Write([]byte("File upload succeeded!"))
+		if err != nil {
+			h.log.Logf("Error: could not serve file upload success string. %v", err)
+		}
+	}
+
+	// Get file data and handler from the upload form.
+	file, handler, err := r.FormFile("fileupload")
+	if err != nil {
+		h.log.Logf("File upload from %s failed!: %v", r.RemoteAddr, err)
+		return
+	}
+	defer file.Close()
+
+	// Read uploaded file to byte array
+	data, err := io.ReadAll(file)
+	if err != nil {
+		h.log.Logf("Failed to read uploaded file from %s! %v", r.RemoteAddr, err)
+		return
+	}
 
 	h.handleUploadFile(handler, r.RemoteAddr, data)
 }
@@ -225,8 +250,12 @@ func writeWebHookResponseToFile(cfg *config.Config, reader io.Reader, webHookFil
 	return nil
 }
 
+// ServeHTTP logs the given request and servers the requested file. This handles all requests that are not
+// handled by the upload handler. Additionally, this will serve the 404 and upload-failed pages with their
+// respective status codes.
 func (h FileServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.log.Logf("%s request at %s from %s", r.Method, r.URL, r.RemoteAddr)
+
 	h.fileServer.ServeHTTP(w, r)
 }
 
@@ -282,8 +311,69 @@ func CreateHTTPServer(cfg *config.Config, log *logging.Log) (*HTTPServer, error)
 		})
 	}
 
+	// Load upload failed data from file for the upload handler. Instead of redirecting,
+	// we are serving the data directly to prevent any connection reset errors.
+	// If file doesn't exist, default to a failure string.
+	redirectFailedFilepath := "web/static/upload-failed.html"
+	uploadFailedFile, err := os.Open(filepath.Clean(redirectFailedFilepath))
+	var uploadFailedData []byte
+	if os.IsNotExist(err) {
+		uploadFailedData = []byte("File upload failed!")
+	} else if err != nil {
+		return nil, err
+	} else {
+		defer uploadFailedFile.Close()
+
+		// Get file size.
+		stat, err := uploadFailedFile.Stat()
+		if err != nil {
+			return nil, err
+		}
+
+		// Read the uploadLog file
+		uploadFailedData = make([]byte, stat.Size())
+
+		if _, err = bufio.NewReader(uploadFailedFile).Read(uploadFailedData); err != nil {
+			return nil, err
+		}
+	}
+
+	// Load upload success data from file for the upload handler. Instead of redirecting,
+	// we are serving the data directly to prevent any connection reset errors.
+	// If file doesn't exist, default to a success string.
+	redirectSuccessFilepath := "web/static/uploaded.html"
+	uploadSuccessFile, err := os.Open(filepath.Clean(redirectSuccessFilepath))
+	var uploadSuccessData []byte
+	if os.IsNotExist(err) {
+		uploadSuccessData = []byte("File upload succeeded!")
+	} else if err != nil {
+		return nil, err
+	} else {
+		defer uploadFailedFile.Close()
+
+		// Get file size.
+		stat, err := uploadSuccessFile.Stat()
+		if err != nil {
+			return nil, err
+		}
+
+		// Read the uploadLog file
+		uploadSuccessData = make([]byte, stat.Size())
+
+		if _, err = bufio.NewReader(uploadSuccessFile).Read(uploadSuccessData); err != nil {
+			return nil, err
+		}
+	}
+
 	// Create FileUploadHandler to add route to mux.
-	fileUploadHandler := FileUploadHandler{cfg, httpServer.uploadLog, uploadWebHookCallbacks, log}
+	fileUploadHandler := FileUploadHandler{
+		cfg:                    cfg,
+		uploadLog:              httpServer.uploadLog,
+		uploadWebHookCallbacks: uploadWebHookCallbacks,
+		log:                    log,
+		uploadFailedHTMLData:   uploadFailedData,
+		uploadSuccessHTMLData:  uploadSuccessData,
+	}
 
 	// Create FileServer Handler to add route to mux
 	fileServer := FileServerHandler{http.FileServer(http.Dir("web/static")), log}
@@ -299,8 +389,9 @@ func CreateHTTPServer(cfg *config.Config, log *logging.Log) (*HTTPServer, error)
 	httpServer.srv = &http.Server{
 		Addr:         portStr,
 		Handler:      mux,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
 	return &httpServer, nil

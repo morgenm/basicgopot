@@ -60,7 +60,9 @@ func TestCreateScanWriterBad(t *testing.T) {
 }
 
 func TestServerUploadNoSaveNoVTNoWH(t *testing.T) {
-	cfg := config.Config{}
+	cfg := config.Config{
+		UploadLimitMB: 512,
+	}
 	// Create log
 	log, err := logging.New("")
 	if err != nil {
@@ -111,8 +113,8 @@ func TestServerUploadNoSaveNoVTNoWH(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusSeeOther {
-		t.Fatalf("TestServerUploadNoSaveNoVTNoWH Unexpected status code. Expected: %d, Got: %d", http.StatusSeeOther, rr.Code)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("TestServerUploadNoSaveNoVTNoWH Unexpected status code. Expected: %d, Got: %d", http.StatusOK, rr.Code)
 	}
 }
 
@@ -130,6 +132,7 @@ func TestServerUploadNoSaveNoWH(t *testing.T) {
 		pwd, _ := os.Getwd()
 		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
+	cfg.UploadLimitMB = 512
 	cfg.UseVirusTotal = true
 	cfg.UploadVirusTotal = true
 	cfg.WebHookDir = ""
@@ -188,8 +191,8 @@ func TestServerUploadNoSaveNoWH(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusSeeOther {
-		t.Fatalf("TestServerUploadNoSaveNoWH Unexpected status code. Expected: %d, Got: %d", http.StatusSeeOther, rr.Code)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("TestServerUploadNoSaveNoWH Unexpected status code. Expected: %d, Got: %d", http.StatusOK, rr.Code)
 	}
 }
 
@@ -210,6 +213,7 @@ func TestServerUploadNoWH(t *testing.T) {
 		pwd, _ := os.Getwd()
 		t.Fatalf(`TestServerUploadNoWH with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
+	cfg.UploadLimitMB = 512
 	cfg.UseVirusTotal = true
 	cfg.UploadVirusTotal = true
 	cfg.WebHookDir = ""
@@ -268,8 +272,8 @@ func TestServerUploadNoWH(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusSeeOther {
-		t.Fatalf("TestServerUploadNoWH Unexpected status code. Expected: %d, Got: %d", http.StatusSeeOther, rr.Code)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("TestServerUploadNoWH Unexpected status code. Expected: %d, Got: %d", http.StatusOK, rr.Code)
 	}
 
 	// Ensure upload file was saved correctly
@@ -317,6 +321,7 @@ func TestServerUploadNoWHBadScanDir(t *testing.T) {
 		pwd, _ := os.Getwd()
 		t.Fatalf(`TestServerUploadNoWHBadScanDir with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
+	cfg.UploadLimitMB = 512
 	cfg.UseVirusTotal = true
 	cfg.UploadVirusTotal = true
 	cfg.WebHookDir = ""
@@ -340,7 +345,7 @@ func TestServerUploadNoWHBadScanDir(t *testing.T) {
 
 	// Generate random bytes to act as our file
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	const fileSize = 1024 * 512 // Will generate half a MB of random data
+	const fileSize = 1024 * 500 // Will generate half a MB of random data
 	data := make([]byte, fileSize)
 	for i := 0; i < fileSize; i++ {
 		data[i] = byte(r.Intn(255 + 1))
@@ -375,8 +380,8 @@ func TestServerUploadNoWHBadScanDir(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusSeeOther {
-		t.Fatalf("TestServerUploadNoWHBadScanDir Unexpected status code. Expected: %d, Got: %d", http.StatusSeeOther, rr.Code)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("TestServerUploadNoWHBadScanDir Unexpected status code. Expected: %d, Got: %d", http.StatusOK, rr.Code)
 	}
 
 	// Ensure upload file was saved correctly
@@ -428,7 +433,7 @@ func TestCreateAndRunHTTPServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to create the log!: %v`, err)
 	}
-
+	cfg.UploadLimitMB = 512
 	cfg.UseVirusTotal = true
 	cfg.UploadVirusTotal = true
 	cfg.WebHookDir = ""
@@ -475,8 +480,8 @@ func TestCreateAndRunHTTPServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TestCreateAndRunHTTPServer error in GET request to server = %v!", err)
 	}
-	if resp.StatusCode != 400 {
-		t.Fatalf("TestCreateAndRunHTTPServer GET request status code = %d, not 400!", resp.StatusCode)
+	if resp.StatusCode != 405 {
+		t.Fatalf("TestCreateAndRunHTTPServer GET request status code = %d, not 405!", resp.StatusCode)
 	}
 
 	// Shutdown and wait for HTTP server.
