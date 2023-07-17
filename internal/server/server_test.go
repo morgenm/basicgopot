@@ -63,7 +63,6 @@ func TestCreateScanWriterBad(t *testing.T) {
 // TestGetPageDataBad tests getting page data for a page that doesn't exist.
 func TestGetPageDataBad(t *testing.T) {
 	pageData, err := GetPageData("::::bad:path////", "Default str")
-
 	if err != nil {
 		t.Fatalf(`TestGetPageDataBad = %v, want nil`, err)
 	}
@@ -93,7 +92,6 @@ func TestGetPageData(t *testing.T) {
 	}
 
 	pageData, err := GetPageData(pageDataPath, "Default str")
-
 	if err != nil {
 		t.Fatalf(`TestGetPageData = %v, want nil`, err)
 	}
