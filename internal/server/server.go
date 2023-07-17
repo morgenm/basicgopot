@@ -260,13 +260,13 @@ func (h FileServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Make sure requested file exists, if not return 404.
 	if filepath.Clean(r.URL.Path) == "/" {
-		h.fileServer.ServeHTTP(w, r)
+		h.fileServer.ServeHTTP(w, r) // Serve index page.
 	} else if _, err := fs.Stat(*h.fsys, filepath.Clean(r.URL.Path[1:])); os.IsNotExist(err) { // Stat file. Remove first ('/').
-		http.Redirect(w, r, "/404.html", http.StatusPermanentRedirect)
+		http.Redirect(w, r, "/404.html", http.StatusPermanentRedirect) // 404 as this page doesn't exist
 	} else if err != nil {
-		h.log.Logf("%v %v %s", err, *h.fsys, filepath.Clean(r.URL.Path))
+		h.log.Logf("%v %v %s", err, *h.fsys, filepath.Clean(r.URL.Path)) // Error performing stat.
 	} else {
-		h.fileServer.ServeHTTP(w, r)
+		h.fileServer.ServeHTTP(w, r) // File exists, serve it.
 	}
 }
 
