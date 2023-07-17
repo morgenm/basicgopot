@@ -32,9 +32,10 @@ type FileUploadHandler struct {
 
 // FileServerHandler just wraps Go's FileServer with logging.
 type FileServerHandler struct {
-	fileServer http.Handler
-	log        *logging.Log
-	fsys       *fs.FS
+	fileServer  http.Handler
+	log         *logging.Log
+	fsys        *fs.FS
+	missingData []byte // Data for 404
 }
 
 type HTTPServer struct {
@@ -262,12 +263,43 @@ func (h FileServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if filepath.Clean(r.URL.Path) == "/" {
 		h.fileServer.ServeHTTP(w, r) // Serve index page.
 	} else if _, err := fs.Stat(*h.fsys, filepath.Clean(r.URL.Path[1:])); os.IsNotExist(err) { // Stat file. Remove first ('/').
-		http.Redirect(w, r, "/404.html", http.StatusPermanentRedirect) // 404 as this page doesn't exist
+		// Return a 404 page
+		w.WriteHeader(404)
+		w.Write(h.missingData)
 	} else if err != nil {
 		h.log.Logf("%v %v %s", err, *h.fsys, filepath.Clean(r.URL.Path)) // Error performing stat.
 	} else {
 		h.fileServer.ServeHTTP(w, r) // File exists, serve it.
 	}
+}
+
+// GetPageData looks to see if a given HTML file is defined, and returns the HTML on success.
+// If it doesn't exist, returns the default string.
+func GetPageData(pageFilepath string, defaultString string) ([]byte, error) {
+	f, err := os.Open(filepath.Clean(pageFilepath))
+
+	var pageData []byte
+	if os.IsNotExist(err) {
+		pageData = []byte(defaultString)
+	} else if err != nil {
+		return nil, err
+	} else {
+		defer f.Close()
+
+		// Get file size.
+		stat, err := f.Stat()
+		if err != nil {
+			return nil, err
+		}
+
+		// Read the uploadLog file
+		pageData = make([]byte, stat.Size())
+
+		if _, err = bufio.NewReader(f).Read(pageData); err != nil {
+			return nil, err
+		}
+	}
+	return pageData, nil
 }
 
 // CreateHTTPServer returns a pointer to a new HTTPServer. Takes config as input in order to define the upload log and WebHooks.
@@ -325,55 +357,23 @@ func CreateHTTPServer(cfg *config.Config, log *logging.Log) (*HTTPServer, error)
 	// Load upload failed data from file for the upload handler. Instead of redirecting,
 	// we are serving the data directly to prevent any connection reset errors.
 	// If file doesn't exist, default to a failure string.
-	redirectFailedFilepath := "web/static/upload-failed.html"
-	uploadFailedFile, err := os.Open(filepath.Clean(redirectFailedFilepath))
-	var uploadFailedData []byte
-	if os.IsNotExist(err) {
-		uploadFailedData = []byte("File upload failed!")
-	} else if err != nil {
+	uploadFailedData, err := GetPageData("web/static/upload-failed.html", "File upload failed!")
+	if err != nil {
 		return nil, err
-	} else {
-		defer uploadFailedFile.Close()
-
-		// Get file size.
-		stat, err := uploadFailedFile.Stat()
-		if err != nil {
-			return nil, err
-		}
-
-		// Read the uploadLog file
-		uploadFailedData = make([]byte, stat.Size())
-
-		if _, err = bufio.NewReader(uploadFailedFile).Read(uploadFailedData); err != nil {
-			return nil, err
-		}
 	}
 
 	// Load upload success data from file for the upload handler. Instead of redirecting,
 	// we are serving the data directly to prevent any connection reset errors.
 	// If file doesn't exist, default to a success string.
-	redirectSuccessFilepath := "web/static/uploaded.html"
-	uploadSuccessFile, err := os.Open(filepath.Clean(redirectSuccessFilepath))
-	var uploadSuccessData []byte
-	if os.IsNotExist(err) {
-		uploadSuccessData = []byte("File upload succeeded!")
-	} else if err != nil {
+	uploadSuccessData, err := GetPageData("web/static/uploaded.html", "File upload succeeded!")
+	if err != nil {
 		return nil, err
-	} else {
-		defer uploadFailedFile.Close()
+	}
 
-		// Get file size.
-		stat, err := uploadSuccessFile.Stat()
-		if err != nil {
-			return nil, err
-		}
-
-		// Read the uploadLog file
-		uploadSuccessData = make([]byte, stat.Size())
-
-		if _, err = bufio.NewReader(uploadSuccessFile).Read(uploadSuccessData); err != nil {
-			return nil, err
-		}
+	// Load 404 page data.
+	missingData, err := GetPageData("web/static/404.html", "404: Page not Found!")
+	if err != nil {
+		return nil, err
 	}
 
 	// Create FileUploadHandler to add route to mux.
@@ -388,7 +388,7 @@ func CreateHTTPServer(cfg *config.Config, log *logging.Log) (*HTTPServer, error)
 
 	// Create FileServer Handler to add route to mux
 	fsys := os.DirFS("web/static")
-	fileServer := FileServerHandler{http.FileServer(http.FS(fsys)), log, &fsys}
+	fileServer := FileServerHandler{http.FileServer(http.FS(fsys)), log, &fsys, missingData}
 
 	// Create mux for server
 	mux := http.NewServeMux()
