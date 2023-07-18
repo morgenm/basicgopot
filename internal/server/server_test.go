@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -59,12 +60,57 @@ func TestCreateScanWriterBad(t *testing.T) {
 	}
 }
 
+// TestGetPageDataBad tests getting page data for a page that doesn't exist.
+func TestGetPageDataBad(t *testing.T) {
+	pageData, err := GetPageData("::::bad:path////", "Default str")
+	if err != nil {
+		t.Fatalf(`TestGetPageDataBad = %v, want nil`, err)
+	}
+
+	if !bytes.Equal([]byte("Default str"), pageData) {
+		t.Fatalf(`TestGetPageDataBad returned unexpected data = %s, want Default str`, pageData)
+	}
+}
+
+// TestGetPageData tests getting page data for a page that does exist.
+func TestGetPageData(t *testing.T) {
+	// Create page data file.
+	tmpDir := t.TempDir()
+	pageStr := "404 page data"
+	pageDataPath := filepath.Join(tmpDir, "data.html")
+	f, err := os.Create(pageDataPath)
+	if err != nil {
+		t.Fatalf(`TestGetPageData create file = %v, want nil`, err)
+	}
+
+	if _, err = f.WriteString(pageStr); err != nil {
+		t.Fatalf(`TestGetPageData write file = %v, want nil`, err)
+	}
+
+	if err = f.Close(); err != nil {
+		t.Fatalf(`TestGetPageData close file = %v, want nil`, err)
+	}
+
+	pageData, err := GetPageData(pageDataPath, "Default str")
+	if err != nil {
+		t.Fatalf(`TestGetPageData = %v, want nil`, err)
+	}
+
+	if !bytes.Equal([]byte(pageStr), pageData) {
+		t.Fatalf(`TestGetPageDataBad returned unexpected data = %s, want %s`, pageData, pageStr)
+	}
+}
+
+// TestServerUploadNoSaveNoVTNoWH tests uploading a random file without saving, without submitting to VT, and
+// without any WebHooks.
 func TestServerUploadNoSaveNoVTNoWH(t *testing.T) {
-	cfg := config.Config{}
+	cfg := config.Config{
+		UploadLimitMB: 512,
+	}
 	// Create log
 	log, err := logging.New("")
 	if err != nil {
-		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to create the log!: %v`, err)
+		t.Fatalf(`TestServerUploadNoSaveNoWH failed to create the log!: %v`, err)
 	}
 
 	ul := UploadLog{}
@@ -111,8 +157,8 @@ func TestServerUploadNoSaveNoVTNoWH(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusSeeOther {
-		t.Fatalf("TestServerUploadNoSaveNoVTNoWH Unexpected status code. Expected: %d, Got: %d", http.StatusSeeOther, rr.Code)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("TestServerUploadNoSaveNoVTNoWH Unexpected status code. Expected: %d, Got: %d", http.StatusOK, rr.Code)
 	}
 }
 
@@ -130,6 +176,7 @@ func TestServerUploadNoSaveNoWH(t *testing.T) {
 		pwd, _ := os.Getwd()
 		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
+	cfg.UploadLimitMB = 512
 	cfg.UseVirusTotal = true
 	cfg.UploadVirusTotal = true
 	cfg.WebHookDir = ""
@@ -188,8 +235,8 @@ func TestServerUploadNoSaveNoWH(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusSeeOther {
-		t.Fatalf("TestServerUploadNoSaveNoWH Unexpected status code. Expected: %d, Got: %d", http.StatusSeeOther, rr.Code)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("TestServerUploadNoSaveNoWH Unexpected status code. Expected: %d, Got: %d", http.StatusOK, rr.Code)
 	}
 }
 
@@ -210,6 +257,7 @@ func TestServerUploadNoWH(t *testing.T) {
 		pwd, _ := os.Getwd()
 		t.Fatalf(`TestServerUploadNoWH with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
+	cfg.UploadLimitMB = 512
 	cfg.UseVirusTotal = true
 	cfg.UploadVirusTotal = true
 	cfg.WebHookDir = ""
@@ -268,8 +316,8 @@ func TestServerUploadNoWH(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusSeeOther {
-		t.Fatalf("TestServerUploadNoWH Unexpected status code. Expected: %d, Got: %d", http.StatusSeeOther, rr.Code)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("TestServerUploadNoWH Unexpected status code. Expected: %d, Got: %d", http.StatusOK, rr.Code)
 	}
 
 	// Ensure upload file was saved correctly
@@ -298,6 +346,89 @@ func TestServerUploadNoWH(t *testing.T) {
 	}
 }
 
+// TestServerUploadTooBigNoWH tests file upload functionality by uploading a file
+// that is higher than the configured max file size.
+func TestServerUploadTooBigNoWH(t *testing.T) {
+	// Create temp dir for uploads
+	tmpDirUploads := t.TempDir()
+
+	configPath := os.Getenv("BASICGOPOT_CONFIG_FILE")
+
+	if configPath == "" {
+		// Quite ugly, but using config.json from top level dir so we
+		// have access to the legitimate API key
+		configPath = "../../config/config.json"
+	}
+
+	cfg, err := config.ReadConfigFromFile(configPath)
+	if err != nil {
+		pwd, _ := os.Getwd()
+		t.Fatalf(`TestServerUploadNoWH with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
+	}
+	cfg.UploadLimitMB = 1
+	cfg.UseVirusTotal = true
+	cfg.UploadVirusTotal = true
+	cfg.WebHookDir = ""
+	cfg.ScanOutputDir = ""
+	cfg.UploadLog = ""
+	cfg.UploadsDir = tmpDirUploads
+	cfg.UploadWebHooks = make(map[string]config.WebHookConfig) // Empty webhooks
+
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to create the log!: %v`, err)
+	}
+
+	ul := UploadLog{}
+	h := FileUploadHandler{
+		cfg:       cfg,
+		uploadLog: &ul,
+		log:       log,
+	}
+
+	// Generate random bytes to act as our file
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	const fileSize = 2 << 20 // Will generate 2 MB of random data, which is more than the upload limit.
+	data := make([]byte, fileSize)
+	for i := 0; i < fileSize; i++ {
+		data[i] = byte(r.Intn(255 + 1))
+	}
+
+	// Create form file for upload
+	buf := new(bytes.Buffer)
+	reader := bytes.NewReader(data) // Create bytes reader for data
+	writer := multipart.NewWriter(buf)
+	formFile, err := writer.CreateFormFile("fileupload", "filename")
+	if err != nil {
+		t.Fatalf(`TestServerUploadNoWH failed with %v`, err)
+	}
+
+	if _, err = io.Copy(formFile, reader); err != nil {
+		t.Fatalf(`TestServerUploadNoSaveNoWH failed with %v`, err)
+	}
+	if err = writer.Close(); err != nil {
+		t.Fatalf(`TestServerUploadNoWH failed with %v`, err)
+	}
+
+	// Make POST request
+	req, err := http.NewRequest("POST", "/upload", buf)
+	if err != nil {
+		t.Fatalf(`TestServerUploadNoWH failed with %v`, err)
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(h.ServeHTTP)
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("TestServerUploadNoWH Unexpected status code. Expected: %d, Got: %d", http.StatusBadRequest, rr.Code)
+	}
+}
+
 // TestServerUploadNoWHBadScanDir tests file uploading with an invalid scan directory. We still expect
 // everything to work correctly expect scan output.
 func TestServerUploadNoWHBadScanDir(t *testing.T) {
@@ -317,6 +448,7 @@ func TestServerUploadNoWHBadScanDir(t *testing.T) {
 		pwd, _ := os.Getwd()
 		t.Fatalf(`TestServerUploadNoWHBadScanDir with known hash, failed to read config file!: %v at pwd of %v`, err, pwd)
 	}
+	cfg.UploadLimitMB = 512
 	cfg.UseVirusTotal = true
 	cfg.UploadVirusTotal = true
 	cfg.WebHookDir = ""
@@ -340,7 +472,7 @@ func TestServerUploadNoWHBadScanDir(t *testing.T) {
 
 	// Generate random bytes to act as our file
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	const fileSize = 1024 * 512 // Will generate half a MB of random data
+	const fileSize = 1024 * 500 // Will generate half a MB of random data
 	data := make([]byte, fileSize)
 	for i := 0; i < fileSize; i++ {
 		data[i] = byte(r.Intn(255 + 1))
@@ -375,8 +507,8 @@ func TestServerUploadNoWHBadScanDir(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusSeeOther {
-		t.Fatalf("TestServerUploadNoWHBadScanDir Unexpected status code. Expected: %d, Got: %d", http.StatusSeeOther, rr.Code)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("TestServerUploadNoWHBadScanDir Unexpected status code. Expected: %d, Got: %d", http.StatusOK, rr.Code)
 	}
 
 	// Ensure upload file was saved correctly
@@ -428,7 +560,7 @@ func TestCreateAndRunHTTPServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to create the log!: %v`, err)
 	}
-
+	cfg.UploadLimitMB = 512
 	cfg.UseVirusTotal = true
 	cfg.UploadVirusTotal = true
 	cfg.WebHookDir = ""
@@ -475,8 +607,8 @@ func TestCreateAndRunHTTPServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TestCreateAndRunHTTPServer error in GET request to server = %v!", err)
 	}
-	if resp.StatusCode != 400 {
-		t.Fatalf("TestCreateAndRunHTTPServer GET request status code = %d, not 400!", resp.StatusCode)
+	if resp.StatusCode != 405 {
+		t.Fatalf("TestCreateAndRunHTTPServer GET request status code = %d, not 405!", resp.StatusCode)
 	}
 
 	// Shutdown and wait for HTTP server.
@@ -515,5 +647,67 @@ func TestWriteWebHookResponseToFileBadDir(t *testing.T) {
 	err := writeWebHookResponseToFile(cfg, reader, webHookFilename)
 	if err == nil || !strings.Contains(err.Error(), "no such file or directory") {
 		t.Fatalf("TestWriteWebHookResponseToFile error writing file = %v, want no such file or directory", err)
+	}
+}
+
+// TestServeHTTPFileServerHandler tests the FileServerHandler.
+func TestServeHTTPFileServerHandler(t *testing.T) {
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestServeHTTPFileServerHandler failed to create log %v`, err)
+	}
+
+	// Create fs for the handler
+	fsDir := t.TempDir()
+	fsys := os.DirFS(fsDir)
+	fileServer := http.FileServer(http.FS(fsys))
+
+	// Create handler
+	h := FileServerHandler{
+		fsys:       &fsys,
+		log:        log,
+		fileServer: fileServer,
+	}
+
+	// Request index, which will always be a 200.
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatalf(`TestServeHTTPFileServerHandler failed to create request with %v`, err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(h.ServeHTTP)
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("TestServeHTTPFileServerHandler Unexpected status code. Expected: %d, Got: %d", http.StatusOK, rr.Code)
+	}
+
+	// Request a page that doesn't exist, which will return 404.
+	req, err = http.NewRequest("GET", "/doesnotexist", nil)
+	if err != nil {
+		t.Fatalf(`TestServeHTTPFileServerHandler failed to create request with %v`, err)
+	}
+	rr = httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("TestServeHTTPFileServerHandler Unexpected status code. Expected: %d, Got: %d", http.StatusNotFound, rr.Code)
+	}
+
+	// Make a bad request.
+	req, err = http.NewRequest("GET", "///badrequest", nil)
+	if err != nil {
+		t.Fatalf(`TestServeHTTPFileServerHandler failed to create request with %v`, err)
+	}
+	rr = httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("TestServeHTTPFileServerHandler Unexpected status code. Expected: %d, Got: %d", http.StatusBadRequest, rr.Code)
 	}
 }

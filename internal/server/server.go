@@ -1,10 +1,12 @@
 package server
 
 import (
+	"bufio"
 	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"io/fs"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -24,12 +26,16 @@ type FileUploadHandler struct {
 	uploadLog              *UploadLog
 	uploadWebHookCallbacks []WebHookCallback
 	log                    *logging.Log
+	uploadFailedHTMLData   []byte
+	uploadSuccessHTMLData  []byte
 }
 
 // FileServerHandler just wraps Go's FileServer with logging.
 type FileServerHandler struct {
-	fileServer http.Handler
-	log        *logging.Log
+	fileServer  http.Handler
+	log         *logging.Log
+	fsys        *fs.FS
+	missingData []byte // Data for 404
 }
 
 type HTTPServer struct {
@@ -166,38 +172,60 @@ func (h FileUploadHandler) handleUploadFile(handler *multipart.FileHeader, uploa
 }
 
 func (h FileUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Set file size limit for the upload
-	if err := r.ParseMultipartForm(h.cfg.UploadLimitMB << 20); err != nil {
-		h.log.Log("Error parsing upload form!")
-		w.WriteHeader(400)
-		fmt.Fprintf(w, "File upload failed!")
-		return
-	}
-
-	// Get file
-	file, handler, err := r.FormFile("fileupload")
-	if err != nil {
-		h.log.Logf("File upload from %s failed!: %v", r.RemoteAddr, err)
-		w.WriteHeader(400)
-		fmt.Fprintf(w, "File upload failed!")
-		return
-	}
-	defer file.Close()
 	h.log.Logf("File being uploaded by %s...", r.RemoteAddr)
 
-	// Read uploaded file to byte array
-	data, err := io.ReadAll(file)
-	if err != nil {
-		h.log.Log("Failed to read uploaded file!")
+	// Make sure this is a POST request
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed!", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Set maximum upload size
+	r.Body = http.MaxBytesReader(w, r.Body, h.cfg.UploadLimitMB<<20)
+
+	// Max memory used by server here is 2GB
+	if err := r.ParseMultipartForm(2048 << 20); err != nil {
+		h.log.Logf("Error parsing upload form from %s! %v. Max file size = %d MB", r.RemoteAddr, err, h.cfg.UploadLimitMB)
+
 		w.WriteHeader(400)
-		fmt.Fprintf(w, "File upload failed!")
+		_, err := w.Write(h.uploadFailedHTMLData)
+		if err != nil {
+			h.log.Logf("Error: could not serve file upload failure HTML file. %v", err)
+			_, err = w.Write([]byte("File upload failed!"))
+			if err != nil {
+				h.log.Logf("Error: could not serve file upload failure string. %v", err)
+			}
+		}
+
 		return
 	}
 
 	// Inform user of success by serving the upload success HTML file
-	http.Redirect(w, r, "uploaded.html", 303)
-	// fmt.Fprintf(w, "File uploaded!")
+	w.WriteHeader(200)
+	_, err := w.Write(h.uploadSuccessHTMLData)
 	h.log.Logf("File uploaded by %s.", r.RemoteAddr)
+	if err != nil {
+		h.log.Logf("Error: could not serve file upload success HTML file. %v", err)
+		_, err = w.Write([]byte("File upload succeeded!"))
+		if err != nil {
+			h.log.Logf("Error: could not serve file upload success string. %v", err)
+		}
+	}
+
+	// Get file data and handler from the upload form.
+	file, handler, err := r.FormFile("fileupload")
+	if err != nil {
+		h.log.Logf("File upload from %s failed!: %v", r.RemoteAddr, err)
+		return
+	}
+	defer file.Close()
+
+	// Read uploaded file to byte array
+	data, err := io.ReadAll(file)
+	if err != nil {
+		h.log.Logf("Failed to read uploaded file from %s! %v", r.RemoteAddr, err)
+		return
+	}
 
 	h.handleUploadFile(handler, r.RemoteAddr, data)
 }
@@ -225,9 +253,56 @@ func writeWebHookResponseToFile(cfg *config.Config, reader io.Reader, webHookFil
 	return nil
 }
 
+// ServeHTTP logs the given request and servers the requested file. This handles all requests that are not
+// handled by the upload handler. Additionally, this will serve the 404 and upload-failed pages with their
+// respective status codes.
 func (h FileServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.log.Logf("%s request at %s from %s", r.Method, r.URL, r.RemoteAddr)
-	h.fileServer.ServeHTTP(w, r)
+
+	// Make sure requested file exists, if not return 404.
+	if filepath.Clean(r.URL.Path) == "/" {
+		h.fileServer.ServeHTTP(w, r) // Serve index page.
+	} else if _, err := fs.Stat(*h.fsys, filepath.Clean(r.URL.Path[1:])); os.IsNotExist(err) { // Stat file. Remove first ('/').
+		// Return a 404 page
+		w.WriteHeader(404)
+		if _, err = w.Write(h.missingData); err != nil {
+			h.log.Logf("Error writing 404 page! %v", err)
+		}
+	} else if err != nil {
+		h.log.Logf("%v %v %s", err, *h.fsys, filepath.Clean(r.URL.Path)) // Error performing stat.
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		h.fileServer.ServeHTTP(w, r) // File exists, serve it.
+	}
+}
+
+// GetPageData looks to see if a given HTML file is defined, and returns the HTML on success.
+// If it doesn't exist, returns the default string.
+func GetPageData(pageFilepath string, defaultString string) ([]byte, error) {
+	f, err := os.Open(filepath.Clean(pageFilepath))
+
+	var pageData []byte
+	if os.IsNotExist(err) {
+		pageData = []byte(defaultString)
+	} else if err != nil {
+		return nil, err
+	} else {
+		defer f.Close()
+
+		// Get file size.
+		stat, err := f.Stat()
+		if err != nil {
+			return nil, err
+		}
+
+		// Read the uploadLog file
+		pageData = make([]byte, stat.Size())
+
+		if _, err = bufio.NewReader(f).Read(pageData); err != nil {
+			return nil, err
+		}
+	}
+	return pageData, nil
 }
 
 // CreateHTTPServer returns a pointer to a new HTTPServer. Takes config as input in order to define the upload log and WebHooks.
@@ -282,11 +357,41 @@ func CreateHTTPServer(cfg *config.Config, log *logging.Log) (*HTTPServer, error)
 		})
 	}
 
+	// Load upload failed data from file for the upload handler. Instead of redirecting,
+	// we are serving the data directly to prevent any connection reset errors.
+	// If file doesn't exist, default to a failure string.
+	uploadFailedData, err := GetPageData("web/static/upload-failed.html", "File upload failed!")
+	if err != nil {
+		return nil, err
+	}
+
+	// Load upload success data from file for the upload handler. Instead of redirecting,
+	// we are serving the data directly to prevent any connection reset errors.
+	// If file doesn't exist, default to a success string.
+	uploadSuccessData, err := GetPageData("web/static/uploaded.html", "File upload succeeded!")
+	if err != nil {
+		return nil, err
+	}
+
+	// Load 404 page data.
+	missingData, err := GetPageData("web/static/404.html", "404: Page not Found!")
+	if err != nil {
+		return nil, err
+	}
+
 	// Create FileUploadHandler to add route to mux.
-	fileUploadHandler := FileUploadHandler{cfg, httpServer.uploadLog, uploadWebHookCallbacks, log}
+	fileUploadHandler := FileUploadHandler{
+		cfg:                    cfg,
+		uploadLog:              httpServer.uploadLog,
+		uploadWebHookCallbacks: uploadWebHookCallbacks,
+		log:                    log,
+		uploadFailedHTMLData:   uploadFailedData,
+		uploadSuccessHTMLData:  uploadSuccessData,
+	}
 
 	// Create FileServer Handler to add route to mux
-	fileServer := FileServerHandler{http.FileServer(http.Dir("web/static")), log}
+	fsys := os.DirFS("web/static")
+	fileServer := FileServerHandler{http.FileServer(http.FS(fsys)), log, &fsys, missingData}
 
 	// Create mux for server
 	mux := http.NewServeMux()
@@ -299,8 +404,9 @@ func CreateHTTPServer(cfg *config.Config, log *logging.Log) (*HTTPServer, error)
 	httpServer.srv = &http.Server{
 		Addr:         portStr,
 		Handler:      mux,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
 	return &httpServer, nil

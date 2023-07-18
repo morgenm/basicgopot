@@ -27,14 +27,14 @@ func main() {
 	// Load config
 	cfg, err := config.ReadConfigFromFile("config/config.json")
 	if err != nil {
-		log.Print("Error reading config.json!") // Logging with log since we can't create the actual log without the config.
+		log.Printf("Error reading config.json! %v", err) // Logging with log since we can't create the actual log without the config.
 		return
 	}
 
 	// Create the Log
 	l, err := logging.New(cfg.LogFile)
 	if err != nil {
-		log.Print("Error creating log!") // Logging with log since we can't create the actual log if this failed.
+		log.Printf("Error creating log! %v", err) // Logging with log since we can't create the actual log if this failed.
 		return
 	}
 
