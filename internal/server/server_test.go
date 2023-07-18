@@ -101,6 +101,8 @@ func TestGetPageData(t *testing.T) {
 	}
 }
 
+// TestServerUploadNoSaveNoVTNoWH tests uploading a random file without saving, without submitting to VT, and
+// without any WebHooks.
 func TestServerUploadNoSaveNoVTNoWH(t *testing.T) {
 	cfg := config.Config{
 		UploadLimitMB: 512,
@@ -108,7 +110,7 @@ func TestServerUploadNoSaveNoVTNoWH(t *testing.T) {
 	// Create log
 	log, err := logging.New("")
 	if err != nil {
-		t.Fatalf(`TestServerUploadNoSaveNoWH with known hash, failed to create the log!: %v`, err)
+		t.Fatalf(`TestServerUploadNoSaveNoWH failed to create the log!: %v`, err)
 	}
 
 	ul := UploadLog{}
@@ -645,5 +647,67 @@ func TestWriteWebHookResponseToFileBadDir(t *testing.T) {
 	err := writeWebHookResponseToFile(cfg, reader, webHookFilename)
 	if err == nil || !strings.Contains(err.Error(), "no such file or directory") {
 		t.Fatalf("TestWriteWebHookResponseToFile error writing file = %v, want no such file or directory", err)
+	}
+}
+
+// TestServeHTTPFileServerHandler tests the FileServerHandler.
+func TestServeHTTPFileServerHandler(t *testing.T) {
+	// Create log
+	log, err := logging.New("")
+	if err != nil {
+		t.Fatalf(`TestServeHTTPFileServerHandler failed to create log %v`, err)
+	}
+
+	// Create fs for the handler
+	fsDir := t.TempDir()
+	fsys := os.DirFS(fsDir)
+	fileServer := http.FileServer(http.FS(fsys))
+
+	// Create handler
+	h := FileServerHandler{
+		fsys:       &fsys,
+		log:        log,
+		fileServer: fileServer,
+	}
+
+	// Request index, which will always be a 200.
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatalf(`TestServeHTTPFileServerHandler failed to create request with %v`, err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(h.ServeHTTP)
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("TestServeHTTPFileServerHandler Unexpected status code. Expected: %d, Got: %d", http.StatusOK, rr.Code)
+	}
+
+	// Request a page that doesn't exist, which will return 404.
+	req, err = http.NewRequest("GET", "/doesnotexist", nil)
+	if err != nil {
+		t.Fatalf(`TestServeHTTPFileServerHandler failed to create request with %v`, err)
+	}
+	rr = httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("TestServeHTTPFileServerHandler Unexpected status code. Expected: %d, Got: %d", http.StatusNotFound, rr.Code)
+	}
+
+	// Make a bad request.
+	req, err = http.NewRequest("GET", "///badrequest", nil)
+	if err != nil {
+		t.Fatalf(`TestServeHTTPFileServerHandler failed to create request with %v`, err)
+	}
+	rr = httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("TestServeHTTPFileServerHandler Unexpected status code. Expected: %d, Got: %d", http.StatusBadRequest, rr.Code)
 	}
 }

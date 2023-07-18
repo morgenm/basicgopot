@@ -270,6 +270,7 @@ func (h FileServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if err != nil {
 		h.log.Logf("%v %v %s", err, *h.fsys, filepath.Clean(r.URL.Path)) // Error performing stat.
+		w.WriteHeader(http.StatusBadRequest)
 	} else {
 		h.fileServer.ServeHTTP(w, r) // File exists, serve it.
 	}
